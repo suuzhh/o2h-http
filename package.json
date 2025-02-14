@@ -18,6 +18,12 @@
       "types": "./types/http.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "types",
+    "README.md",
+    "package.json"
+  ],
   "keywords": [
     "http",
     "fetch",
