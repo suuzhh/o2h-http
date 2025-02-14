@@ -1,4 +1,4 @@
-# h2o/http
+# o2h/http
 
 基于 `fetch` 的浏览器http客户端
 
