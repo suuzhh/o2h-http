@@ -1,9 +1,6 @@
 interface ValidateStatus {
     /**
-     * `validateStatus` defines whether to resolve or reject the promise for a given
-     *  HTTP response status code. If `validateStatus` returns `true` (or is set to `null`
-     *  or `undefined`), the promise will be resolved; otherwise, the promise will be
-     *  rejected.
+     * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
      * @param status HTTP status code
      * @returns
      */
