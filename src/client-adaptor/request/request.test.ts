@@ -32,7 +32,7 @@ describe("RequestConfig", () => {
       method: "GET",
       headers,
     });
-    expect(requestObj.headers["Content-Type"]).toBe(
+    expect(requestObj.headers.get('Content-Type')).toBe(
       headers["Content-Type"]
     );
   });

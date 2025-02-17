@@ -110,11 +110,12 @@ export interface IOhterOptions {
 
 /** 适配器 请求对象 */
 export interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
-
+  /** headers字段在内部最终统一转为Headers对象 */
+  headers: Headers;
 }
 
 /** user request config */
-export type RequestConfig = Partial<IHTTPRequestConfig>;
+export type RequestConfig = Partial<IHttpClientRequestOptions & IOhterOptions>;
 
 function getDefultOtherOptions(): IOhterOptions {
   return {
@@ -139,6 +140,8 @@ export function normalizeRequestConfig(
   actionConfig: RequestConfig,
   instanceConfig?: RequestConfig
 ): IHTTPRequestConfig {
+  const headers = mergeHeaders(actionConfig.headers, instanceConfig?.headers);
+
   const completeConfig = Object.assign(
     // fill default other config
     {
@@ -147,9 +150,46 @@ export function normalizeRequestConfig(
       validateStatus: defaultOtherConfig.validateStatus,
     },
     instanceConfig ?? {},
-    actionConfig
+    actionConfig,
+    // 覆盖前面的headers
+    {
+      headers
+    }
   ) satisfies IHTTPRequestConfig;
 
   return completeConfig;
+}
+
+function mergeHeaders(actionHeaders?: Record<string, string> | Headers, instanceHeaders?: Record<string, string> | Headers): Headers {
+  // 创建一个新的 Headers 对象
+  const mergedHeaders = new Headers();
+
+  // 如果存在 instanceHeaders，将其添加到 mergedHeaders
+  if (instanceHeaders) {
+    if (instanceHeaders instanceof Headers) {
+      instanceHeaders.forEach((value, key) => {
+        mergedHeaders.append(key, value);
+      });
+    } else {
+      Object.entries(instanceHeaders).forEach(([key, value]) => {
+        mergedHeaders.append(key, value);
+      });
+    }
+  }
+
+  // 如果存在 actionHeaders，将其添加到 mergedHeaders（会覆盖 instanceHeaders 中的相同键）
+  if (actionHeaders) {
+    if (actionHeaders instanceof Headers) {
+      actionHeaders.forEach((value, key) => {
+        mergedHeaders.set(key, value);
+      });
+    } else {
+      Object.entries(actionHeaders).forEach(([key, value]) => {
+        mergedHeaders.set(key, value);
+      });
+    }
+  }
+
+  return mergedHeaders;
 }
 

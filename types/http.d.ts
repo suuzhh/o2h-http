@@ -103,9 +103,11 @@ interface IOhterOptions {
 }
 /** 适配器 请求对象 */
 interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
+    /** headers字段在内部最终统一转为Headers对象 */
+    headers: Headers;
 }
 /** user request config */
-type RequestConfig = Partial<IHTTPRequestConfig>;
+type RequestConfig = Partial<IHttpClientRequestOptions & IOhterOptions>;
 
 type SuccessResult<T> = {
     /** 解析是否成功 */

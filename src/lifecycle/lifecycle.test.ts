@@ -6,7 +6,7 @@ describe("Lifecycle", () => {
   const lifecycle = new LifecycleCaller();
   test("beforeRequest is defined", async () => {
     lifecycle.beforeRequest((req) => {
-      req.headers["Content-Type"] = "123"
+      req.headers.set("Content-Type", "123");
       return req;
     });
 
@@ -20,7 +20,7 @@ describe("Lifecycle", () => {
     const result = res.result;
 
     expect(result).not.toBeUndefined();
-    expect(result!.headers["Content-Type"]).toBe("123");
+    expect(result!.headers.get("Content-Type")).toBe("123");
     // expect(result!.bodyUsed).toBeFalsy();
   });
 
