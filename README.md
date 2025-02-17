@@ -18,7 +18,7 @@
 ### 解析器
 处理请求和响应的数据解析（调研是否需要拆分为requestParser和responseParser）
 
-- JSONParser - JSON数据解析
+ - JSONParser - JSON 数据解析
 - BlobParser - Blob数据解析
 
 ### 请求的生命周期
