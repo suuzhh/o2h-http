@@ -1,5 +1,5 @@
-import { request } from "./core";
-import { normalizeRequestConfig, RequestConfig } from "./config/request";
+import { normalizeRequestConfig, type RequestConfig } from '@/client-adaptor/request';
+import { fetchAdaptor } from "./client-adaptor/fetch";
 import { JSONParser, IResponseParser } from "./parser";
 import { LifecycleCaller } from "./lifecycle";
 import type { IResult } from "./utils";
@@ -28,7 +28,10 @@ export class HttpClient implements IHttpClient {
   // 生命周期处理对象
   readonly lifecycle = new LifecycleCaller();
 
-  constructor(private responseParser: IResponseParser = new JSONParser()) {}
+  // 请求客户端适配器
+  readonly fetchClient = fetchAdaptor;
+
+  constructor(private responseParser: IResponseParser = new JSONParser()) { }
 
   post<R = unknown, P = unknown>(
     url: string,
@@ -37,20 +40,21 @@ export class HttpClient implements IHttpClient {
   ) {
     const headers = new Headers();
     let body: globalThis.BodyInit | undefined = undefined;
+    // TODO: body类型转换是否需要转到client-adaptor层
     if (data instanceof FormData) {
       // 针对表单的设置
       // header 不需要自己设置成multipart/form-data，
       // 让浏览器自己添加，否则识别不到文件
       body = data;
-    } else if (data instanceof ReadableStream) {
-      body = data;
-      headers.set("Content-Type", "application/octet-stream");
+      // } else if (data instanceof ReadableStream) {
+      //   body = data;
+      //   headers.set("Content-Type", "application/octet-stream");
     } else {
       body = JSON.stringify(data);
       headers.set("Content-Type", "application/json");
     }
 
-    const [requestObj, otherConfig] = normalizeRequestConfig({
+    const requestConfig = normalizeRequestConfig({
       ...config,
       url,
       method: "POST",
@@ -58,15 +62,10 @@ export class HttpClient implements IHttpClient {
       headers,
     });
 
-    return request<R>(
-      requestObj,
-      otherConfig,
-      this.responseParser,
-      this.lifecycle
-    );
+    return this.fetchClient.fetch<R>(requestConfig, this.responseParser, this.lifecycle);
   }
 
-  get<R = unknown, P = Record<string, string | number> | string>(
+  get<R = Record<string, string>, P = Record<string, string | number> | string>(
     url: string,
     options?: Omit<RequestConfig, "url" | "method" | "body"> & { query?: P }
   ) {
@@ -82,19 +81,14 @@ export class HttpClient implements IHttpClient {
       }
     }
 
-    const [requestObj, otherConfig] = normalizeRequestConfig({
+    const requestConfig = normalizeRequestConfig({
       ...actionConfig,
       url,
       method: "GET",
     });
 
-    return request<R>(
-      requestObj,
-      otherConfig,
-      this.responseParser,
-      this.lifecycle
-    );
+    return this.fetchClient.fetch<R>(requestConfig, this.responseParser, this.lifecycle);
   }
 }
 
-export interface HttpClientOptions {}
+export interface HttpClientOptions { }

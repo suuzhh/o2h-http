@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { normalizeRequestConfig } from "./request";
+import { normalizeRequestConfig } from "./index";
 
 describe("RequestConfig", () => {
   test("url is defined", () => {
     const url = "https://jsonplaceholder.typicode.com/todos/1";
 
-    const [requestObj] = normalizeRequestConfig({
+    const requestObj = normalizeRequestConfig({
       url,
       method: "GET",
     });
@@ -15,7 +15,7 @@ describe("RequestConfig", () => {
   test("method is defined", () => {
     const method = "GET";
 
-    const [requestObj] = normalizeRequestConfig({
+    const requestObj = normalizeRequestConfig({
       url: "https://jsonplaceholder.typicode.com/todos/1",
       method,
     });
@@ -27,20 +27,21 @@ describe("RequestConfig", () => {
       "Content-Type": "application/json",
     };
 
-    const [requestObj] = normalizeRequestConfig({
+    const requestObj = normalizeRequestConfig({
       url: "https://jsonplaceholder.typicode.com/todos/1",
       method: "GET",
       headers,
     });
-    expect(requestObj.headers.get("Content-Type")).toBe(
+    expect(requestObj.headers.get('Content-Type')).toBe(
       headers["Content-Type"]
     );
   });
 
+  // 依赖httpClient.fetch的实现,暂时忽略
   test("body is defined", async () => {
     const body = "test";
 
-    const [requestObj] = normalizeRequestConfig({
+    const requestObj = normalizeRequestConfig({
       url: "https://jsonplaceholder.typicode.com/todos/1",
       method: "POST",
       body: body,
@@ -49,16 +50,8 @@ describe("RequestConfig", () => {
     if (!requestObj.body) {
       throw new Error("body is undefined");
     }
-    const reader = requestObj.body.getReader();
-    let resData = "";
-    let done = false;
-    // 读取body内容
-    while (!done) {
-      const result = await reader.read();
-      // Uint8Array to string
-      resData += new TextDecoder("utf-8").decode(result.value);
-      done = result.done;
-    }
+    const resData = requestObj.body;
+
     expect(resData).toBe(body);
   });
 });

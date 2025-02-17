@@ -3,7 +3,7 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "target": "ES2016",
+    "target": "ES2017",
     "module": "ESNext",
     "esModuleInterop": true,
     "strict": true,
@@ -11,7 +11,9 @@
     "moduleResolution": "Bundler",
     "rootDir": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*",
+      ]
     }
   },
   "include": [

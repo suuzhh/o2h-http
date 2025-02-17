@@ -1,16 +1,14 @@
-import { getDefultOtherConfig, type OtherConfig } from "./other";
-import type { LifecycleConfig } from "../lifecycle";
 /**
- * 请求配置
- *
- * 用户可传可不传
+ * client adaptor request options
+ * 
+ * 这些配置暴露给用户，用户可以根据自己的需求，自定义配置
  */
-interface BaseRequestConfig {
+export interface IHttpClientRequestOptions {
   url: string;
 
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
 
-  headers?: Record<string, string> | globalThis.Headers;
+  headers: Record<string, string> | Headers;
 
   /**
    *  传递给请求体的数据（目前只支持FormData 和 string）
@@ -20,7 +18,7 @@ interface BaseRequestConfig {
     - Browser only: FormData, File, Blob
     - Node only: Stream, Buffer, FormData (form-data package)
    */
-  body?: FormData | string | globalThis.ReadableStream;
+  body?: FormData | string;
 
   /**
    * 用于表示用户代理是否应该在跨域请求的情况下从其他域发送 cookies
@@ -76,6 +74,7 @@ interface BaseRequestConfig {
   redirect?: globalThis.RequestInit["redirect"];
   referrer?: globalThis.RequestInit["referrer"];
   referrerPolicy?: globalThis.RequestInit["referrerPolicy"];
+  /** A cryptographic hash of the resource to be fetched by request. Sets request's integrity. */
   integrity?: globalThis.RequestInit["integrity"];
   /**
    * support safari 13+
@@ -90,69 +89,107 @@ interface BaseRequestConfig {
    * support safari 13+
    * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/signal
    */
-  signal?: globalThis.RequestInit["signal"];
+  signal: globalThis.RequestInit["signal"] | null;
 }
 
-export interface RequestConfig
-  extends BaseRequestConfig,
-    LifecycleConfig,
-    Partial<OtherConfig> {}
+export interface IOhterOptions {
+  /**
+ * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+ * @param status HTTP status code
+ * @returns
+ */
+  validateStatus: (status: number) => boolean;
 
-const defaultRequestConfig: RequestConfig = {
+  /**
+   * 请求超时时间
+   * 
+   * 0 表示不限制 使用系统默认超时时间
+   */
+  timeout: number;
+}
+
+/** 适配器 请求对象 */
+export interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
+  /** headers字段在内部最终统一转为Headers对象 */
+  headers: Headers;
+}
+
+/** user request config */
+export type RequestConfig = Partial<IHttpClientRequestOptions & IOhterOptions>;
+
+function getDefultOtherOptions(): IOhterOptions {
+  return {
+    timeout: 0,
+    validateStatus: (status: number) => status >= 200 && status < 300,
+  };
+}
+
+const defaultRequestConfig: IHttpClientRequestOptions = {
   url: "",
   method: "GET",
-  timeout: 0,
+  headers: {},
+  signal: null,
 };
 
-const defaultOtherConfig = getDefultOtherConfig();
+const defaultOtherConfig = getDefultOtherOptions();
 
-function createRequestInit(config: RequestConfig) {
-  const headers = new Headers(config.headers);
-  // https://muffinman.io/blog/uploading-files-using-fetch-multipart-form-data/
-  if (config.body instanceof FormData) {
-    headers.delete("Content-Type");
-  }
-
-  // 为了兼容NODEJS ReadableStream
-  const requestInit: globalThis.RequestInit & { duplex?: "half" } = {
-    method: config.method,
-    headers,
-    // body只在对应的method下有效
-    body: config.body,
-    // 如果body是ReadableStream，需要设置 duplex
-    duplex: config.body instanceof ReadableStream ? "half" : undefined,
-    credentials: config.credentials,
-    mode: config.mode,
-    cache: config.cache,
-    redirect: config.redirect,
-    referrer: config.referrer,
-    referrerPolicy: config.referrerPolicy,
-    integrity: config.integrity,
-    keepalive: config.keepalive,
-    signal: config.signal,
-  };
-
-  return new Request(config.url, requestInit);
-}
-
+/**
+ * 合并用户输入配置和实例配置，返回最终配置
+ */
 export function normalizeRequestConfig(
   actionConfig: RequestConfig,
   instanceConfig?: RequestConfig
-): [globalThis.Request, Required<Readonly<OtherConfig>>] {
+): IHTTPRequestConfig {
+  const headers = mergeHeaders(actionConfig.headers, instanceConfig?.headers);
+
   const completeConfig = Object.assign(
-    {},
-    defaultRequestConfig,
+    // fill default other config
+    {
+      ...defaultRequestConfig,
+      timeout: defaultOtherConfig.timeout,
+      validateStatus: defaultOtherConfig.validateStatus,
+    },
     instanceConfig ?? {},
-    actionConfig
-  );
+    actionConfig,
+    // 覆盖前面的headers
+    {
+      headers
+    }
+  ) satisfies IHTTPRequestConfig;
 
-  const requestObj = createRequestInit(completeConfig);
-
-  const otherConfig: OtherConfig = {
-    timeout: completeConfig.timeout ?? defaultOtherConfig.timeout,
-    validateStatus:
-      completeConfig.validateStatus ?? defaultOtherConfig.validateStatus,
-  };
-
-  return [requestObj, otherConfig];
+  return completeConfig;
 }
+
+function mergeHeaders(actionHeaders?: Record<string, string> | Headers, instanceHeaders?: Record<string, string> | Headers): Headers {
+  // 创建一个新的 Headers 对象
+  const mergedHeaders = new Headers();
+
+  // 如果存在 instanceHeaders，将其添加到 mergedHeaders
+  if (instanceHeaders) {
+    if (instanceHeaders instanceof Headers) {
+      instanceHeaders.forEach((value, key) => {
+        mergedHeaders.append(key, value);
+      });
+    } else {
+      Object.entries(instanceHeaders).forEach(([key, value]) => {
+        mergedHeaders.append(key, value);
+      });
+    }
+  }
+
+  // 如果存在 actionHeaders，将其添加到 mergedHeaders（会覆盖 instanceHeaders 中的相同键）
+  if (actionHeaders) {
+    if (actionHeaders instanceof Headers) {
+      actionHeaders.forEach((value, key) => {
+        mergedHeaders.set(key, value);
+      });
+    } else {
+      Object.entries(actionHeaders).forEach(([key, value]) => {
+        mergedHeaders.set(key, value);
+      });
+    }
+  }
+
+  return mergedHeaders;
+}
+

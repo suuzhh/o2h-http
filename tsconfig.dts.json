@@ -4,6 +4,12 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationDir": "./types",
+    "plugins": [
+      {
+        "transform": "tsc-alias"
+      }
+    ],
+    "outDir": "types"
   },
   "exclude": [
     "./src/**/*.test.ts"

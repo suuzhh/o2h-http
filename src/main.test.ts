@@ -15,6 +15,29 @@ describe("createHttpClient", () => {
     expect(res.data).not.toBeUndefined();
   });
 
+  test("createHttpClient.get with query", async () => {
+    let url = '';
+    const cancel = httpClient.lifecycle.beforeRequest((req) => {
+      url = req.url;
+      return req;
+    })
+    const res = await httpClient.get("https://jsonplaceholder.typicode.com/todos/1", {
+      query: {
+        a: 1,
+      },
+    });
+    expect(res.data).not.toBeUndefined();
+    expect(url).toBe("https://jsonplaceholder.typicode.com/todos/1?a=1");
+
+    const res2 = await httpClient.get("https://jsonplaceholder.typicode.com/todos/1", {
+      query: 'a=2',
+    });
+
+    expect(res2.data).not.toBeUndefined();
+    expect(url).toBe("https://jsonplaceholder.typicode.com/todos/1?a=2");
+    cancel();
+  });
+
   test("createHttpClient.post is defined", async () => {
     const res = await httpClient.post(
       "https://jsonplaceholder.typicode.com/todos/1"

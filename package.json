@@ -1,12 +1,12 @@
 {
   "name": "@o2h/http",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "web http client",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "rollup -c && pnpm build:types",
-    "build:types": "tsc -p tsconfig.dts.json && rollup -c rollup.dts.config.js && pnpm clear:types-temp",
+    "build:types": "tsc -p tsconfig.dts.json && tsc-alias -p tsconfig.dts.json && rollup -c rollup.dts.config.js && pnpm clear:types-temp",
     "lint": "oxlint src --fix --fix-suggestions && eslint",
     "test:unit": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -41,6 +41,7 @@
     "oxlint": "0.15.10",
     "rollup": "^4.27.2",
     "rollup-plugin-dts": "^6.1.1",
+    "tsc-alias": "^1.8.10",
     "tslib": "^2.8.1",
     "typescript": "^5.6.3",
     "vite": "^6.1.0",
