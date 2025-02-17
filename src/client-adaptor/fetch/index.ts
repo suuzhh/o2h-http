@@ -49,16 +49,61 @@ export const fetchAdaptor: IHttpClientAdaptor = {
     }
 
     const { validateStatus, timeout } = requestConfig;
-
     const requestInit = createRequestInit(requestConfig);
-
     try {
       // 包裹一层 用于 验证是否超时
       res = await timeoutWrapper(timeout * 1000, fetch(requestInit));
     } catch (err) {
-      return buildFailResult(
-        err instanceof Error ? err : new Error("request error")
-      );
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      const isTimeout = err instanceof Error && err?.name === "TimeoutError";
+
+      if (isAbort) {
+        // porcess abort error
+        return buildFailResult(err);
+      } else if (isTimeout) {
+        // process timeout error
+        return buildFailResult(err)
+      } else {
+        // porcess cors | network block or no network error
+
+        // this error should call `onResponseStatusError` lifecycle
+        const onResponseStatusErrorResult = await lifecycle.call(
+          "onResponseStatusError",
+          requestConfig,
+          // 暂时为该异常设置响应状态码为0
+          {
+            body: null,
+            status: 0,
+            statusText: "network error",
+            headers: new Headers(),
+            url: '',
+            ok: false,
+            redirected: false,
+            type: 'error',
+          } as Response
+        );
+        // TODO: result 的 error 是否需要处理？
+
+        if (
+          onResponseStatusErrorResult.result ||
+          onResponseStatusErrorResult.error
+        ) {
+          // 判断是否有返回Error对象
+          if (onResponseStatusErrorResult.result instanceof Error) {
+            return buildFailResult(onResponseStatusErrorResult.result);
+          }
+
+          if (onResponseStatusErrorResult.error instanceof Error) {
+            return buildFailResult(onResponseStatusErrorResult.error);
+          }
+        }
+
+        let error = err instanceof Error ? err : new Error("request error");
+        return buildFailResult(
+          error
+        );
+      }
+
     }
 
     // 通过状态码判断成功与否
