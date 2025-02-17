@@ -76,4 +76,12 @@ describe("Lifecycle", () => {
     expect(error).not.toBeUndefined();
     expect(error!.message).toBe("456");
   });
+
+  test('onResponseStatusError not throw error should return native error', async () => {
+    throw new Error("123");
+  });
+
+  test('onResponseStatusError return void or undefined should return native error', async () => {
+    throw new Error("123");
+  });
 });
