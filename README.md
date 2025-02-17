@@ -4,6 +4,9 @@
 
 ## 技术细节
 
+### 包装层
+抽象默认的请求、响应对象，用于适配多种请求实例
+
 ### 配置层
 目前支持实例配置和触发配置
 配置优先级如下
@@ -16,19 +19,13 @@
 - JSONParser - JSON数据解析
 - BlobParser - Blob数据解析
 
-
 ### 请求的生命周期
 
 - onBeforeRequest - 发送请求前
 - onAfterRequest - 发送请求后
-- onResponseStatusError - 响应状态错误,默认为状态码大于等于400时抛出错误，可通过`validateStatus`配置自定义定义错误的逻辑
+- onResponseStatusError - 响应状态错误,默认为状态码大于等于400时抛出错误，可通过`validateStatus`配置自定义错误的逻辑
 
-
-### 中间件
-是否真的需要拦截器， 或者只是需要某些特殊的钩子事件？
-
-
-### 插件系统
+### 插件系统(待定)
 
 ## 使用方法
 

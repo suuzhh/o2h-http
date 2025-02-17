@@ -1,7 +1,7 @@
 import type { OtherConfig } from "./config/other";
 import { LifecycleCaller } from "./lifecycle";
 import type { IResponseParser } from "./parser";
-import { timeout as timeoutWrapper } from "./timeout";
+import { timeout as timeoutWrapper } from "./client-adaptor/fetch/timeout";
 import { type IResult, buildSuccessResult, buildFailResult } from "./utils";
 
 export async function request<R>(
