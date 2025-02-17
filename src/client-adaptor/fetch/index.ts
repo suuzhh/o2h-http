@@ -11,7 +11,6 @@ function createRequestInit(config: IHTTPRequestConfig) {
   if (config.body instanceof FormData) {
     headers.delete("Content-Type");
   }
-
   // 为了兼容NODEJS ReadableStream
   const requestInit: globalThis.RequestInit & { duplex?: "half" } = {
     method: config.method,
@@ -89,6 +88,7 @@ export const fetchAdaptor: IHttpClientAdaptor = {
       // 处理状态码错误
       const onResponseStatusErrorResult = await lifecycle.call(
         "onResponseStatusError",
+        requestConfig,
         res
       );
 

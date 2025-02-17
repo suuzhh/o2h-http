@@ -9,7 +9,7 @@ export interface Lifecycle {
    *
    * 可通过 validateStatus 来自定义校验规则
    */
-  onResponseStatusError: (res: globalThis.Response) => Promise<Error> | Error | undefined;
+  onResponseStatusError: (req: IHTTPRequestConfig, res: globalThis.Response) => Promise<Error> | Error | undefined | void;
 }
 
 interface LifecycleResult<T> {
@@ -60,10 +60,17 @@ export class LifecycleCaller {
 
   beforeRequest = (fn: Lifecycle["beforeRequest"]) => {
     this.__lifecycle__.beforeRequest = fn;
+    return () => {
+      this.__lifecycle__.beforeRequest = undefined;
+    }
   };
 
 
   onResponseStatusError = (fn: Lifecycle["onResponseStatusError"]) => {
     this.__lifecycle__.onResponseStatusError = fn;
+
+    return () => {
+      this.__lifecycle__.onResponseStatusError = undefined;
+    }
   };
 }

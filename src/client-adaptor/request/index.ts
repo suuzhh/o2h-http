@@ -8,7 +8,7 @@ export interface IHttpClientRequestOptions {
 
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
 
-  headers: Record<string, string> | globalThis.Headers;
+  headers: Record<string, string> | Headers;
 
   /**
    *  传递给请求体的数据（目前只支持FormData 和 string）
@@ -18,7 +18,7 @@ export interface IHttpClientRequestOptions {
     - Browser only: FormData, File, Blob
     - Node only: Stream, Buffer, FormData (form-data package)
    */
-  body?: FormData | string | globalThis.ReadableStream;
+  body?: FormData | string;
 
   /**
    * 用于表示用户代理是否应该在跨域请求的情况下从其他域发送 cookies

@@ -1,60 +1,14 @@
-interface ValidateStatus {
-    /**
-     * `validateStatus` defines whether to resolve or reject the promise for a given
-     *  HTTP response status code. If `validateStatus` returns `true` (or is set to `null`
-     *  or `undefined`), the promise will be resolved; otherwise, the promise will be
-     *  rejected.
-     * @param status HTTP status code
-     * @returns
-     */
-    validateStatus: (status: number) => boolean;
-    /**
-     * 请求超时时间
-     *
-     * 0 表示不限制 使用系统默认超时时间
-     */
-    timeout: number;
-}
-/** 其它请求配置 */
-interface OtherConfig extends ValidateStatus {
-}
-
-interface Lifecycle {
-    beforeRequest: (req: globalThis.Request) => Promise<globalThis.Request> | globalThis.Request | undefined;
-    /**
-     * 在响应状态未通过校验时触发
-     *
-     * 可通过 validateStatus 来自定义校验规则
-     */
-    onResponseStatusError: (res: globalThis.Response) => Promise<Error> | Error | undefined;
-}
-interface LifecycleResult<T> {
-    result?: T;
-    error?: Error;
-}
-type LifecycleConfig = Partial<Lifecycle>;
-/**
- * implements all Http Lifecycle
- */
-declare class LifecycleCaller {
-    /**
-     * lifecycle method only defined singlely
-     */
-    private __lifecycle__;
-    call<T extends keyof Lifecycle>(name: T, ...args: Parameters<Lifecycle[T]>): Promise<LifecycleResult<Awaited<ReturnType<Lifecycle[T]>>>>;
-    beforeRequest: (fn: Lifecycle["beforeRequest"]) => void;
-    onResponseStatusError: (fn: Lifecycle["onResponseStatusError"]) => void;
-}
+import { IHTTPRequestConfig as IHTTPRequestConfig$1, RequestConfig } from '@/client-adaptor/request';
 
 /**
- * 请求配置
+ * client adaptor request options
  *
- * 用户可传可不传
+ * 这些配置暴露给用户，用户可以根据自己的需求，自定义配置
  */
-interface BaseRequestConfig {
+interface IHttpClientRequestOptions {
     url: string;
     method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
-    headers?: Record<string, string> | globalThis.Headers;
+    headers: Record<string, string> | Headers;
     /**
      *  传递给请求体的数据（目前只支持FormData 和 string）
       Only applicable for request methods 'PUT', 'POST', 'DELETE , and 'PATCH'
@@ -63,7 +17,7 @@ interface BaseRequestConfig {
       - Browser only: FormData, File, Blob
       - Node only: Stream, Buffer, FormData (form-data package)
      */
-    body?: FormData | string | globalThis.ReadableStream;
+    body?: FormData | string;
     /**
      * 用于表示用户代理是否应该在跨域请求的情况下从其他域发送 cookies
      * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/credentials
@@ -118,6 +72,7 @@ interface BaseRequestConfig {
     redirect?: globalThis.RequestInit["redirect"];
     referrer?: globalThis.RequestInit["referrer"];
     referrerPolicy?: globalThis.RequestInit["referrerPolicy"];
+    /** A cryptographic hash of the resource to be fetched by request. Sets request's integrity. */
     integrity?: globalThis.RequestInit["integrity"];
     /**
      * support safari 13+
@@ -132,9 +87,24 @@ interface BaseRequestConfig {
      * support safari 13+
      * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/signal
      */
-    signal?: globalThis.RequestInit["signal"];
+    signal: globalThis.RequestInit["signal"] | null;
 }
-interface RequestConfig extends BaseRequestConfig, LifecycleConfig, Partial<OtherConfig> {
+interface IOhterOptions {
+    /**
+   * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+   * @param status HTTP status code
+   * @returns
+   */
+    validateStatus: (status: number) => boolean;
+    /**
+     * 请求超时时间
+     *
+     * 0 表示不限制 使用系统默认超时时间
+     */
+    timeout: number;
+}
+/** 适配器 请求对象 */
+interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
 }
 
 type SuccessResult<T> = {
@@ -169,6 +139,32 @@ declare class BlobParser implements IResponseParser {
     parse<T = Blob>(response: globalThis.Response): Promise<ParseResult<T>>;
 }
 
+interface Lifecycle {
+    beforeRequest: (req: IHTTPRequestConfig$1) => Promise<IHTTPRequestConfig$1> | IHTTPRequestConfig$1 | undefined;
+    /**
+     * 在响应状态未通过校验时触发
+     *
+     * 可通过 validateStatus 来自定义校验规则
+     */
+    onResponseStatusError: (req: IHTTPRequestConfig$1, res: globalThis.Response) => Promise<Error> | Error | undefined | void;
+}
+interface LifecycleResult<T> {
+    result?: T;
+    error?: Error;
+}
+/**
+ * implements all Http Lifecycle
+ */
+declare class LifecycleCaller {
+    /**
+     * lifecycle method only defined singlely
+     */
+    private __lifecycle__;
+    call<T extends keyof Lifecycle>(name: T, ...args: Parameters<Lifecycle[T]>): Promise<LifecycleResult<Awaited<ReturnType<Lifecycle[T]>>>>;
+    beforeRequest: (fn: Lifecycle["beforeRequest"]) => () => void;
+    onResponseStatusError: (fn: Lifecycle["onResponseStatusError"]) => () => void;
+}
+
 /** Promise结果包装类 */
 type IResult<T = object, E = Error> = {
     error: E;
@@ -177,6 +173,10 @@ type IResult<T = object, E = Error> = {
     data: T;
     error?: undefined;
 };
+
+interface IHttpClientAdaptor {
+    fetch: <R>(request: IHTTPRequestConfig, responseParser: IResponseParser, lifecycle: LifecycleCaller) => Promise<IResult<R>>;
+}
 
 interface IHttpClient {
     post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig): Promise<IResult<R>>;
@@ -187,9 +187,10 @@ interface IHttpClient {
 declare class HttpClient implements IHttpClient {
     private responseParser;
     readonly lifecycle: LifecycleCaller;
+    readonly fetchClient: IHttpClientAdaptor;
     constructor(responseParser?: IResponseParser);
     post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig): Promise<IResult<R>>;
-    get<R = unknown, P = Record<string, string | number> | string>(url: string, options?: Omit<RequestConfig, "url" | "method" | "body"> & {
+    get<R = Record<string, string>, P = Record<string, string | number> | string>(url: string, options?: Omit<RequestConfig, "url" | "method" | "body"> & {
         query?: P;
     }): Promise<IResult<R>>;
 }

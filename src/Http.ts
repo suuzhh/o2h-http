@@ -40,14 +40,15 @@ export class HttpClient implements IHttpClient {
   ) {
     const headers = new Headers();
     let body: globalThis.BodyInit | undefined = undefined;
+    // TODO: body类型转换是否需要转到client-adaptor层
     if (data instanceof FormData) {
       // 针对表单的设置
       // header 不需要自己设置成multipart/form-data，
       // 让浏览器自己添加，否则识别不到文件
       body = data;
-    } else if (data instanceof ReadableStream) {
-      body = data;
-      headers.set("Content-Type", "application/octet-stream");
+      // } else if (data instanceof ReadableStream) {
+      //   body = data;
+      //   headers.set("Content-Type", "application/octet-stream");
     } else {
       body = JSON.stringify(data);
       headers.set("Content-Type", "application/json");
