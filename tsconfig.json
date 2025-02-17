@@ -11,7 +11,9 @@
     "moduleResolution": "Bundler",
     "rootDir": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*",
+      ]
     }
   },
   "include": [

@@ -1,5 +1,3 @@
-import { IHTTPRequestConfig as IHTTPRequestConfig$1, RequestConfig } from '@/client-adaptor/request';
-
 /**
  * client adaptor request options
  *
@@ -106,6 +104,8 @@ interface IOhterOptions {
 /** 适配器 请求对象 */
 interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
 }
+/** user request config */
+type RequestConfig = Partial<IHTTPRequestConfig>;
 
 type SuccessResult<T> = {
     /** 解析是否成功 */
@@ -140,13 +140,13 @@ declare class BlobParser implements IResponseParser {
 }
 
 interface Lifecycle {
-    beforeRequest: (req: IHTTPRequestConfig$1) => Promise<IHTTPRequestConfig$1> | IHTTPRequestConfig$1 | undefined;
+    beforeRequest: (req: IHTTPRequestConfig) => Promise<IHTTPRequestConfig> | IHTTPRequestConfig | undefined;
     /**
      * 在响应状态未通过校验时触发
      *
      * 可通过 validateStatus 来自定义校验规则
      */
-    onResponseStatusError: (req: IHTTPRequestConfig$1, res: globalThis.Response) => Promise<Error> | Error | undefined | void;
+    onResponseStatusError: (req: IHTTPRequestConfig, res: globalThis.Response) => Promise<Error> | Error | undefined | void;
 }
 interface LifecycleResult<T> {
     result?: T;
