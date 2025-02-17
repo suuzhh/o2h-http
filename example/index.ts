@@ -17,24 +17,24 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 async function testAbort() {
-  httpClient.lifecycle.onResponseStatusError((req, res) => {
+  httpClient.lifecycle.addEventListener("onResponseError", (req, res) => {
     console.log(req, res);
-    return new Error("123");
-  })
+  });
 
   const controller = new AbortController();
   const startTime = performance.now();
-  httpClient
-    .get("https://61e80b15e32cd90017acbfb7.mockapi.io/enterprise/news", {
+  httpClient.get(
+    "https://61e80b15e32cd90017acbfb7.mockapi.io/enterprise/news",
+    {
       signal: controller.signal,
-    });
+    }
+  );
 
   setTimeout(() => {
     const endTime = performance.now() - startTime;
     // controller.abort();
     console.log(endTime);
-  }, 50)
-
+  }, 50);
 }
 
 testAbort();

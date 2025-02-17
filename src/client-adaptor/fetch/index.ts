@@ -1,8 +1,8 @@
 import type { IHTTPRequestConfig } from "@/client-adaptor/request";
 import type { IHttpClientAdaptor } from "@/client-adaptor/base";
-import { buildFailResult, buildSuccessResult } from '@/utils';
-import type { IResponseParser } from '@/parser';
-import type { LifecycleCaller } from '@/lifecycle';
+import { buildFailResult, buildSuccessResult } from "@/utils";
+import type { IResponseParser } from "@/parser";
+import type { LifecycleCaller } from "@/lifecycle";
 import { timeout as timeoutWrapper } from "./timeout";
 
 function createRequestInit(config: IHTTPRequestConfig) {
@@ -35,10 +35,17 @@ function createRequestInit(config: IHTTPRequestConfig) {
 
 // client-adaptor/fetch 实现
 export const fetchAdaptor: IHttpClientAdaptor = {
-  fetch: async <R>(requestConfig: IHTTPRequestConfig, responseParser: IResponseParser, lifecycle: LifecycleCaller) => {
+  fetch: async <R>(
+    requestConfig: IHTTPRequestConfig,
+    responseParser: IResponseParser,
+    lifecycle: LifecycleCaller
+  ) => {
     let res: Response;
 
-    const beforeRequestResult = await lifecycle.call("beforeRequest", requestConfig);
+    const beforeRequestResult = await lifecycle.call(
+      "beforeRequest",
+      requestConfig
+    );
 
     if (beforeRequestResult.error) {
       return buildFailResult(beforeRequestResult.error);
@@ -62,48 +69,15 @@ export const fetchAdaptor: IHttpClientAdaptor = {
         return buildFailResult(err);
       } else if (isTimeout) {
         // process timeout error
-        return buildFailResult(err)
+        return buildFailResult(err);
       } else {
         // porcess cors | network block or no network error
 
         // this error should call `onResponseStatusError` lifecycle
-        const onResponseStatusErrorResult = await lifecycle.call(
-          "onResponseStatusError",
-          requestConfig,
-          // 暂时为该异常设置响应状态码为0
-          {
-            body: null,
-            status: 0,
-            statusText: "network error",
-            headers: new Headers(),
-            url: '',
-            ok: false,
-            redirected: false,
-            type: 'error',
-          } as Response
-        );
-        // TODO: result 的 error 是否需要处理？
-
-        if (
-          onResponseStatusErrorResult.result ||
-          onResponseStatusErrorResult.error
-        ) {
-          // 判断是否有返回Error对象
-          if (onResponseStatusErrorResult.result instanceof Error) {
-            return buildFailResult(onResponseStatusErrorResult.result);
-          }
-
-          if (onResponseStatusErrorResult.error instanceof Error) {
-            return buildFailResult(onResponseStatusErrorResult.error);
-          }
-        }
-
+        lifecycle.emit("onResponseError", requestConfig);
         let error = err instanceof Error ? err : new Error("request error");
-        return buildFailResult(
-          error
-        );
+        return buildFailResult(error);
       }
-
     }
 
     // 通过状态码判断成功与否
@@ -131,6 +105,7 @@ export const fetchAdaptor: IHttpClientAdaptor = {
       //   );
       // }
     } else {
+      lifecycle.emit("onResponseError", requestConfig, res);
       // 处理状态码错误
       const onResponseStatusErrorResult = await lifecycle.call(
         "onResponseStatusError",
@@ -160,8 +135,8 @@ export const fetchAdaptor: IHttpClientAdaptor = {
         );
       }
     }
-  }
-}
+  },
+};
 
 async function parseResponse<R>(
   res: Response,
