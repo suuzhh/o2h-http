@@ -18,7 +18,7 @@ export interface IHttpClientRequestOptions {
     - Browser only: FormData, File, Blob
     - Node only: Stream, Buffer, FormData (form-data package)
    */
-  body: FormData | string | globalThis.ReadableStream;
+  body?: FormData | string | globalThis.ReadableStream;
 
   /**
    * 用于表示用户代理是否应该在跨域请求的情况下从其他域发送 cookies
@@ -28,7 +28,7 @@ export interface IHttpClientRequestOptions {
    * - same-origin: 只有当 URL 与响应脚本同源才发送 cookies、HTTP Basic authentication 等验证信息.(浏览器默认值，在旧版本浏览器，例如 safari 11 依旧是 omit，safari 12 已更改)
    * - include: 不论是不是跨域的请求，总是发送请求资源域在本地的 cookies、HTTP Basic authentication 等验证信息。
    */
-  credentials: globalThis.RequestInit["credentials"];
+  credentials?: globalThis.RequestInit["credentials"];
   /**
    * support safari 10.1+
    * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/mode
@@ -40,7 +40,7 @@ export interface IHttpClientRequestOptions {
    * - cors — 允许跨域请求，例如访问第三方供应商提供的各种 API。预期将会遵守 CORS protocol 。仅有有限部分的头部暴露在 Response ，但是 body 部分是可读的。
    * - navigate — 表示这是一个浏览器的页面切换请求 (request)。navigate 请求仅在浏览器切换页面时创建，该请求应该返回 HTML。
    */
-  mode: globalThis.RequestInit["mode"];
+  mode?: globalThis.RequestInit["mode"];
   /**
    * support safari 10.1+
    * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/cache
@@ -70,11 +70,12 @@ export interface IHttpClientRequestOptions {
    * - -如果没有匹配，浏览器将返回一个错误。
    * 仅当请求的mode为 `same-origin` 时，才能使用 `only-if-cached` 模式。如果请求的 'redirect' 属性为 'follow' ，并且重定向不违反 'same-origin' 模式，则将遵循缓存的重定向。
    */
-  cache: globalThis.RequestInit["cache"];
-  redirect: globalThis.RequestInit["redirect"];
-  referrer: globalThis.RequestInit["referrer"];
-  referrerPolicy: globalThis.RequestInit["referrerPolicy"];
-  integrity: globalThis.RequestInit["integrity"];
+  cache?: globalThis.RequestInit["cache"];
+  redirect?: globalThis.RequestInit["redirect"];
+  referrer?: globalThis.RequestInit["referrer"];
+  referrerPolicy?: globalThis.RequestInit["referrerPolicy"];
+  /** A cryptographic hash of the resource to be fetched by request. Sets request's integrity. */
+  integrity?: globalThis.RequestInit["integrity"];
   /**
    * support safari 13+
    * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/keepalive
@@ -83,16 +84,72 @@ export interface IHttpClientRequestOptions {
    *
    * 这使得 fetch() 请求能够在会话结束时发送分析数据，即使用户离开或关闭页面也是如此。与出于相同目的使用 Navigator.sendBeacon() 相比，这具有一些优势，包括允许您使用 POST 之外的 HTTP 方法、自定义请求属性以及通过 fetch Promise 实现访问服务器响应。它也可用于服务人员。
    */
-  keepalive: globalThis.RequestInit["keepalive"];
+  keepalive?: globalThis.RequestInit["keepalive"];
   /**
    * support safari 13+
    * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/signal
    */
-  signal: globalThis.RequestInit["signal"];
+  signal: globalThis.RequestInit["signal"] | null;
+}
+
+export interface IOhterOptions {
+  /**
+ * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+ * @param status HTTP status code
+ * @returns
+ */
+  validateStatus: (status: number) => boolean;
+
+  /**
+   * 请求超时时间
+   * 
+   * 0 表示不限制 使用系统默认超时时间
+   */
+  timeout: number;
 }
 
 /** 适配器 请求对象 */
-export interface IHTTPRequest {
+export interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
 
+}
+
+/** user request config */
+export type RequestConfig = Partial<IHTTPRequestConfig>;
+
+function getDefultOtherOptions(): IOhterOptions {
+  return {
+    timeout: 0,
+    validateStatus: (status: number) => status >= 200 && status < 300,
+  };
+}
+
+const defaultRequestConfig: IHttpClientRequestOptions = {
+  url: "",
+  method: "GET",
+  headers: {},
+  signal: null,
+};
+
+const defaultOtherConfig = getDefultOtherOptions();
+
+/**
+ * 合并用户输入配置和实例配置，返回最终配置
+ */
+export function normalizeRequestConfig(
+  actionConfig: RequestConfig,
+  instanceConfig?: RequestConfig
+): IHTTPRequestConfig {
+  const completeConfig = Object.assign(
+    // fill default other config
+    {
+      ...defaultRequestConfig,
+      timeout: defaultOtherConfig.timeout,
+      validateStatus: defaultOtherConfig.validateStatus,
+    },
+    instanceConfig ?? {},
+    actionConfig
+  ) satisfies IHTTPRequestConfig;
+
+  return completeConfig;
 }
 

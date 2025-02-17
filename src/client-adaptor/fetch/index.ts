@@ -1,27 +1,61 @@
-import { IHTTPRequest } from "@/client-adaptor/request";
-import { IHttpClientAdaptor } from "@/client-adaptor/base";
+import type { IHTTPRequestConfig } from "@/client-adaptor/request";
+import type { IHttpClientAdaptor } from "@/client-adaptor/base";
 import { buildFailResult, buildSuccessResult } from '@/utils';
+import type { IResponseParser } from '@/parser';
+import type { LifecycleCaller } from '@/lifecycle';
 import { timeout as timeoutWrapper } from "./timeout";
+
+function createRequestInit(config: IHTTPRequestConfig) {
+  const headers = new Headers(config.headers);
+  // https://muffinman.io/blog/uploading-files-using-fetch-multipart-form-data/
+  if (config.body instanceof FormData) {
+    headers.delete("Content-Type");
+  }
+
+  // 为了兼容NODEJS ReadableStream
+  const requestInit: globalThis.RequestInit & { duplex?: "half" } = {
+    method: config.method,
+    headers,
+    // body只在对应的method下有效
+    body: config.body,
+    // 如果body是ReadableStream，需要设置 duplex
+    duplex: config.body instanceof ReadableStream ? "half" : undefined,
+    credentials: config.credentials,
+    mode: config.mode,
+    cache: config.cache,
+    redirect: config.redirect,
+    referrer: config.referrer,
+    referrerPolicy: config.referrerPolicy,
+    integrity: config.integrity,
+    keepalive: config.keepalive,
+    signal: config.signal,
+  };
+
+  return new Request(config.url, requestInit);
+}
+
 // client-adaptor/fetch 实现
 export const fetchAdaptor: IHttpClientAdaptor = {
-  fetch: async (request: IHTTPRequest, responseParser, lifecycle) => {
+  fetch: async <R>(requestConfig: IHTTPRequestConfig, responseParser: IResponseParser, lifecycle: LifecycleCaller) => {
     let res: Response;
 
-    const beforeRequestResult = await lifecycle.call("beforeRequest", request);
+    const beforeRequestResult = await lifecycle.call("beforeRequest", requestConfig);
 
     if (beforeRequestResult.error) {
       return buildFailResult(beforeRequestResult.error);
     }
 
     if (beforeRequestResult.result) {
-      request = beforeRequestResult.result;
+      requestConfig = beforeRequestResult.result;
     }
 
-    const { validateStatus, timeout } = otherConfig;
+    const { validateStatus, timeout } = requestConfig;
+
+    const requestInit = createRequestInit(requestConfig);
 
     try {
       // 包裹一层 用于 验证是否超时
-      res = await timeoutWrapper(timeout * 1000, fetch(request));
+      res = await timeoutWrapper(timeout * 1000, fetch(requestInit));
     } catch (err) {
       return buildFailResult(
         err instanceof Error ? err : new Error("request error")

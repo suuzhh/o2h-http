@@ -1,4 +1,4 @@
-import { getDefultOtherConfig, type OtherConfig } from "./other";
+import { type OtherConfig } from "./other";
 import type { LifecycleConfig } from "../lifecycle";
 /**
  * 请求配置
@@ -98,61 +98,4 @@ export interface RequestConfig
     LifecycleConfig,
     Partial<OtherConfig> {}
 
-const defaultRequestConfig: RequestConfig = {
-  url: "",
-  method: "GET",
-  timeout: 0,
-};
 
-const defaultOtherConfig = getDefultOtherConfig();
-
-function createRequestInit(config: RequestConfig) {
-  const headers = new Headers(config.headers);
-  // https://muffinman.io/blog/uploading-files-using-fetch-multipart-form-data/
-  if (config.body instanceof FormData) {
-    headers.delete("Content-Type");
-  }
-
-  // 为了兼容NODEJS ReadableStream
-  const requestInit: globalThis.RequestInit & { duplex?: "half" } = {
-    method: config.method,
-    headers,
-    // body只在对应的method下有效
-    body: config.body,
-    // 如果body是ReadableStream，需要设置 duplex
-    duplex: config.body instanceof ReadableStream ? "half" : undefined,
-    credentials: config.credentials,
-    mode: config.mode,
-    cache: config.cache,
-    redirect: config.redirect,
-    referrer: config.referrer,
-    referrerPolicy: config.referrerPolicy,
-    integrity: config.integrity,
-    keepalive: config.keepalive,
-    signal: config.signal,
-  };
-
-  return new Request(config.url, requestInit);
-}
-
-export function normalizeRequestConfig(
-  actionConfig: RequestConfig,
-  instanceConfig?: RequestConfig
-): [globalThis.Request, Required<Readonly<OtherConfig>>] {
-  const completeConfig = Object.assign(
-    {},
-    defaultRequestConfig,
-    instanceConfig ?? {},
-    actionConfig
-  );
-
-  const requestObj = createRequestInit(completeConfig);
-
-  const otherConfig: OtherConfig = {
-    timeout: completeConfig.timeout ?? defaultOtherConfig.timeout,
-    validateStatus:
-      completeConfig.validateStatus ?? defaultOtherConfig.validateStatus,
-  };
-
-  return [requestObj, otherConfig];
-}

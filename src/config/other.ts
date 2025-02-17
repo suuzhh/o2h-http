@@ -14,12 +14,7 @@ interface ValidateStatus {
     timeout: number;
 }
 
-export function getDefultOtherConfig() {
-    return {
-        timeout: 0,
-        validateStatus: (status: number) => status >= 200 && status < 300,
-    };
-}
+
 
 /** 其它请求配置 */
 export interface OtherConfig extends ValidateStatus {}
