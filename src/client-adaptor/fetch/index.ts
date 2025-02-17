@@ -66,24 +66,25 @@ export const fetchAdaptor: IHttpClientAdaptor = {
     // TODO: 状态码为0的情况如何判断类别
 
     if (isOK) {
-      try {
-        // headers中的Content-Type设为application/json 才能使用json解析
-        // 根据解析逻辑处理成对应类型的数据结构
-        const parseResult = await responseParser.parse<R>(res);
+      return await parseResponse<R>(res, responseParser);
+      // try {
+      //   // headers中的Content-Type设为application/json 才能使用json解析
+      //   // 根据解析逻辑处理成对应类型的数据结构
+      //   const parseResult = await responseParser.parse<R>(res);
 
-        if (parseResult.isSuccess) {
-          return buildSuccessResult(parseResult.result);
-        } else {
-          // TODO: 暂时返回原生错误对象
-          return buildFailResult(
-            parseResult.error.cause ?? new Error("response parse error")
-          );
-        }
-      } catch (err) {
-        return buildFailResult(
-          err instanceof Error ? err : new Error("response parse error")
-        );
-      }
+      //   if (parseResult.isSuccess) {
+      //     return buildSuccessResult(parseResult.result);
+      //   } else {
+      //     // TODO: 暂时返回原生错误对象
+      //     return buildFailResult(
+      //       parseResult.error.cause ?? new Error("response parse error")
+      //     );
+      //   }
+      // } catch (err) {
+      //   return buildFailResult(
+      //     err instanceof Error ? err : new Error("response parse error")
+      //   );
+      // }
     } else {
       // 处理状态码错误
       const onResponseStatusErrorResult = await lifecycle.call(
@@ -114,5 +115,24 @@ export const fetchAdaptor: IHttpClientAdaptor = {
         );
       }
     }
+  }
+}
+
+async function parseResponse<R>(
+  res: Response,
+  responseParser: IResponseParser
+) {
+  try {
+    const parseResult = await responseParser.parse<R>(res);
+    if (parseResult.isSuccess) {
+      return buildSuccessResult(parseResult.result);
+    }
+    return buildFailResult(
+      parseResult.error.cause ?? new Error("response parse error")
+    );
+  } catch (err) {
+    return buildFailResult(
+      err instanceof Error ? err : new Error("response parse error")
+    );
   }
 }
