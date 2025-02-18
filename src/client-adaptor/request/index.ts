@@ -108,7 +108,10 @@ export interface IOhterOptions {
   timeout: number;
 }
 
-/** 适配器 请求对象 */
+/** 适配器 请求对象
+ * 
+ * @TODO 实现HttpRequest对象
+ */
 export interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
   /** headers字段在内部最终统一转为Headers对象 */
   headers: Headers;

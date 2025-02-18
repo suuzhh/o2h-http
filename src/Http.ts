@@ -1,8 +1,12 @@
-import { normalizeRequestConfig, type RequestConfig } from '@/client-adaptor/request';
-import { fetchAdaptor } from "./client-adaptor/fetch";
+import {
+  normalizeRequestConfig,
+  type RequestConfig,
+} from "@/client-adaptor/request";
+import { FetchClient } from "./client-adaptor/fetch";
 import { JSONParser, IResponseParser } from "./parser";
 import { LifecycleCaller } from "./lifecycle";
 import type { IResult } from "./utils";
+import { IHttpClientAdaptor } from "./client-adaptor/base";
 
 interface IHttpClient {
   post<R = unknown, P = unknown>(
@@ -29,9 +33,11 @@ export class HttpClient implements IHttpClient {
   readonly lifecycle = new LifecycleCaller();
 
   // 请求客户端适配器
-  readonly fetchClient = fetchAdaptor;
+  readonly fetchClient: IHttpClientAdaptor;
 
-  constructor(private responseParser: IResponseParser = new JSONParser()) { }
+  constructor(private responseParser: IResponseParser = new JSONParser()) {
+    this.fetchClient = new FetchClient(responseParser, this.lifecycle);
+  }
 
   post<R = unknown, P = unknown>(
     url: string,
@@ -62,7 +68,7 @@ export class HttpClient implements IHttpClient {
       headers,
     });
 
-    return this.fetchClient.fetch<R>(requestConfig, this.responseParser, this.lifecycle);
+    return this.fetchClient.fetch<R>(requestConfig);
   }
 
   get<R = Record<string, string>, P = Record<string, string | number> | string>(
@@ -87,8 +93,8 @@ export class HttpClient implements IHttpClient {
       method: "GET",
     });
 
-    return this.fetchClient.fetch<R>(requestConfig, this.responseParser, this.lifecycle);
+    return this.fetchClient.fetch<R>(requestConfig);
   }
 }
 
-export interface HttpClientOptions { }
+export interface HttpClientOptions {}

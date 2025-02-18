@@ -34,15 +34,16 @@ function createRequestInit(config: IHTTPRequestConfig) {
 }
 
 // client-adaptor/fetch 实现
-export const fetchAdaptor: IHttpClientAdaptor = {
-  fetch: async <R>(
-    requestConfig: IHTTPRequestConfig,
-    responseParser: IResponseParser,
-    lifecycle: LifecycleCaller
-  ) => {
+export class FetchClient implements IHttpClientAdaptor {
+  constructor(
+    private responseParser: IResponseParser,
+    private lifecycle: LifecycleCaller
+  ) {}
+
+  async fetch<R>(requestConfig: IHTTPRequestConfig) {
     let res: Response;
 
-    const beforeRequestResult = await lifecycle.call(
+    const beforeRequestResult = await this.lifecycle.call(
       "beforeRequest",
       requestConfig
     );
@@ -74,7 +75,7 @@ export const fetchAdaptor: IHttpClientAdaptor = {
         // porcess cors | network block or no network error
 
         // this error should call `onResponseStatusError` lifecycle
-        lifecycle.emit("onResponseError", requestConfig);
+        this.lifecycle.emit("onResponseError", requestConfig);
         let error = err instanceof Error ? err : new Error("request error");
         return buildFailResult(error);
       }
@@ -85,29 +86,11 @@ export const fetchAdaptor: IHttpClientAdaptor = {
     // TODO: 状态码为0的情况如何判断类别
 
     if (isOK) {
-      return await parseResponse<R>(res, responseParser);
-      // try {
-      //   // headers中的Content-Type设为application/json 才能使用json解析
-      //   // 根据解析逻辑处理成对应类型的数据结构
-      //   const parseResult = await responseParser.parse<R>(res);
-
-      //   if (parseResult.isSuccess) {
-      //     return buildSuccessResult(parseResult.result);
-      //   } else {
-      //     // TODO: 暂时返回原生错误对象
-      //     return buildFailResult(
-      //       parseResult.error.cause ?? new Error("response parse error")
-      //     );
-      //   }
-      // } catch (err) {
-      //   return buildFailResult(
-      //     err instanceof Error ? err : new Error("response parse error")
-      //   );
-      // }
+      return await parseResponse<R>(res, this.responseParser);
     } else {
-      lifecycle.emit("onResponseError", requestConfig, res);
+      this.lifecycle.emit("onResponseError", requestConfig, res);
       // 处理状态码错误
-      const onResponseStatusErrorResult = await lifecycle.call(
+      const onResponseStatusErrorResult = await this.lifecycle.call(
         "onResponseStatusError",
         requestConfig,
         res
@@ -135,8 +118,8 @@ export const fetchAdaptor: IHttpClientAdaptor = {
         );
       }
     }
-  },
-};
+  }
+}
 
 async function parseResponse<R>(
   res: Response,
