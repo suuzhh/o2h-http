@@ -8,7 +8,7 @@ import { LifecycleCaller } from "./lifecycle";
 import type { IResult } from "./utils";
 import { IHttpClientAdaptor } from "./client-adaptor/base";
 
-interface IHttpClient {
+export interface IHttpClient {
   post<R = unknown, P = unknown>(
     url: string,
     data?: P,
@@ -35,7 +35,7 @@ export class HttpClient implements IHttpClient {
   // 请求客户端适配器
   readonly fetchClient: IHttpClientAdaptor;
 
-  constructor(private responseParser: IResponseParser = new JSONParser()) {
+  constructor(responseParser: IResponseParser = new JSONParser()) {
     this.fetchClient = new FetchClient(responseParser, this.lifecycle);
   }
 

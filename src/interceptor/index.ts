@@ -17,29 +17,51 @@ export type HttpInterceptorFn = (
   next: HttpHandlerFn
 ) => globalThis.Response | Promise<globalThis.Response>;
 
+export interface HttpInterceptorConfig {
+  request?: HttpInterceptorFn[];
+  response?: HttpInterceptorFn[];
+}
+
 export class HttpInterceptorHandler {
+  private static config: HttpInterceptorConfig = {
+    request: [],
+    response: [],
+  };
+
   constructor(
     private interceptors: HttpInterceptorFn[],
     private backend: IHttpClientAdaptor
   ) {}
 
+  static configure(callback: (config: HttpInterceptorConfig) => void) {
+    callback(this.config);
+    return this;
+  }
+
   handle<R>(
     initReq: IHTTPRequestConfig
   ): globalThis.Response | Promise<globalThis.Response> {
-    const endFn = (initialRequest, finalHandlerFn) =>
-      finalHandlerFn(initialRequest);
+    // 合并全局配置的拦截器和实例拦截器
+    const allInterceptors = [
+      ...(HttpInterceptorHandler.config.request || []),
+      ...this.interceptors,
+      ...(HttpInterceptorHandler.config.response || []).reverse(),
+    ];
 
-    const chain = this.interceptors.reduceRight((next, interceptorFn) => {
-      return (req: IHTTPRequestConfig, lastNext) => {
-        return interceptorFn(req, (r) => {
-          return next(r, lastNext);
-        });
+    const endFn = (
+      initialRequest: IHTTPRequestConfig,
+      finalHandlerFn: HttpHandlerFn
+    ) => finalHandlerFn(initialRequest);
+
+    const chain = allInterceptors.reduceRight((next, interceptorFn) => {
+      return (req: IHTTPRequestConfig, lastNext: HttpHandlerFn) => {
+        return interceptorFn(req, (modifiedReq) => next(modifiedReq, lastNext));
       };
     }, endFn);
 
     return chain(initReq, (lastReq: IHTTPRequestConfig) => {
       // 执行最后一个操作
-      return this.backend.fetch<R>(lastReq);
+      return this.backend.doRequest<R>(lastReq);
     });
   }
 }

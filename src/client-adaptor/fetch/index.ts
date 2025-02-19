@@ -40,7 +40,7 @@ export class FetchClient implements IHttpClientAdaptor {
     private lifecycle: LifecycleCaller
   ) {}
 
-  async fetch<R>(requestConfig: IHTTPRequestConfig) {
+  async doRequest<R>(requestConfig: IHTTPRequestConfig) {
     let res: Response;
 
     const beforeRequestResult = await this.lifecycle.call(
