@@ -5,6 +5,11 @@ import { buildFailResult, buildSuccessResult } from "./utils";
 // export custom parsers
 export { BlobParser };
 
+
+/**
+ * 即将重构，欢迎使用createFetchHttpClient体验新版客户端
+ * @returns 
+ */
 export function createHttpClient() {
   return new HttpClient();
 }
@@ -40,4 +45,10 @@ export function createDownloader() {
       return buildSuccessResult(file);
     },
   };
+}
+
+// 0.2.0重构
+
+export function createFetchHttpClient() {
+  
 }
