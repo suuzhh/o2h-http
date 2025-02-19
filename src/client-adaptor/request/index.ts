@@ -1,6 +1,8 @@
+import { mergeHeaders } from "@/utils/mergeHeaders";
+
 /**
  * client adaptor request options
- * 
+ *
  * 这些配置暴露给用户，用户可以根据自己的需求，自定义配置
  */
 export interface IHttpClientRequestOptions {
@@ -94,25 +96,27 @@ export interface IHttpClientRequestOptions {
 
 export interface IOhterOptions {
   /**
- * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
- * @param status HTTP status code
- * @returns
- */
+   * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+   * @param status HTTP status code
+   * @returns
+   */
   validateStatus: (status: number) => boolean;
 
   /**
    * 请求超时时间
-   * 
+   *
    * 0 表示不限制 使用系统默认超时时间
    */
   timeout: number;
 }
 
 /** 适配器 请求对象
- * 
+ *
  * @TODO 实现HttpRequest对象
  */
-export interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
+export interface IHTTPRequestConfig
+  extends IHttpClientRequestOptions,
+    IOhterOptions {
   /** headers字段在内部最终统一转为Headers对象 */
   headers: Headers;
 }
@@ -156,43 +160,9 @@ export function normalizeRequestConfig(
     actionConfig,
     // 覆盖前面的headers
     {
-      headers
+      headers,
     }
   ) satisfies IHTTPRequestConfig;
 
   return completeConfig;
 }
-
-function mergeHeaders(actionHeaders?: Record<string, string> | Headers, instanceHeaders?: Record<string, string> | Headers): Headers {
-  // 创建一个新的 Headers 对象
-  const mergedHeaders = new Headers();
-
-  // 如果存在 instanceHeaders，将其添加到 mergedHeaders
-  if (instanceHeaders) {
-    if (instanceHeaders instanceof Headers) {
-      instanceHeaders.forEach((value, key) => {
-        mergedHeaders.append(key, value);
-      });
-    } else {
-      Object.entries(instanceHeaders).forEach(([key, value]) => {
-        mergedHeaders.append(key, value);
-      });
-    }
-  }
-
-  // 如果存在 actionHeaders，将其添加到 mergedHeaders（会覆盖 instanceHeaders 中的相同键）
-  if (actionHeaders) {
-    if (actionHeaders instanceof Headers) {
-      actionHeaders.forEach((value, key) => {
-        mergedHeaders.set(key, value);
-      });
-    } else {
-      Object.entries(actionHeaders).forEach(([key, value]) => {
-        mergedHeaders.set(key, value);
-      });
-    }
-  }
-
-  return mergedHeaders;
-}
-

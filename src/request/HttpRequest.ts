@@ -36,7 +36,9 @@ export class HttpRequest extends Request {
       url: new URL(this.url),
       method: this.method as INTERNAL_RequestConfig["method"],
       headers: this.headers,
-      body: this.body,
+      body: this.body
     });
   }
+
+
 }

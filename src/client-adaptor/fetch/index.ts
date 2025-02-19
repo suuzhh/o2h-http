@@ -121,7 +121,7 @@ export class FetchClient implements IHttpClientAdaptor {
   }
 }
 
-async function parseResponse<R>(
+export async function parseResponse<R>(
   res: Response,
   responseParser: IResponseParser
 ) {
