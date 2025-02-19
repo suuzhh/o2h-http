@@ -8,6 +8,7 @@ import { HttpRequest } from "./request/HttpRequest";
 import { buildFailResult, type IResult } from "./utils";
 import { mergeHeaders } from "./utils/mergeHeaders";
 
+/** 替换掉RequestConfig */
 export interface UserRequestConfig {}
 
 export class FetchHttpClient implements IHttpClient {
@@ -15,12 +16,46 @@ export class FetchHttpClient implements IHttpClient {
 
   readonly responseParser = new JSONParser();
 
-  post<R = unknown, P = unknown>(
+  async post<R = unknown, P = unknown>(
     url: string,
     data?: P,
     config?: RequestConfig
   ): Promise<IResult<R>> {
-    throw new Error("Method not implemented.");
+    let body: RequestConfig["body"] = undefined;
+    const headers = mergeHeaders(config?.headers);
+    if (data instanceof FormData) {
+      body = data;
+    } else {
+      body = JSON.stringify(data);
+    }
+
+    const req = new HttpRequest({
+      url: new URL(url),
+      method: "POST",
+      headers: headers,
+      body: body,
+    });
+
+    const conf = {
+      timeout: config?.timeout || 0,
+      validateStatus:
+        config?.validateStatus || ((status) => status >= 200 && status < 300),
+    };
+
+    const { response, error } = await this.httpBackend.doRequest(req, conf);
+
+    if (error) {
+      return buildFailResult(error);
+    }
+
+    // 有响应才算成功
+    if (response) {
+      // 解析数据
+      // TODO: 是否需要使用response.parse替换该方法
+      return await parseResponse<R>(response, this.responseParser);
+    } else {
+      return buildFailResult(new Error("unknown response error"));
+    }
   }
   async get<P = Record<string, string | number>, R = unknown>(
     url: string,
@@ -59,7 +94,6 @@ export class FetchHttpClient implements IHttpClient {
     // 有响应才算成功
     if (response) {
       // 解析数据
-
       // TODO: 是否需要使用response.parse替换该方法
       return await parseResponse<R>(response, this.responseParser);
     } else {

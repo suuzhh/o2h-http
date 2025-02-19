@@ -68,7 +68,7 @@ export class HttpClient implements IHttpClient {
       headers,
     });
 
-    return this.fetchClient.fetch<R>(requestConfig);
+    return this.fetchClient.doRequest<R>(requestConfig);
   }
 
   get<R = Record<string, string>, P = Record<string, string | number> | string>(
@@ -93,7 +93,7 @@ export class HttpClient implements IHttpClient {
       method: "GET",
     });
 
-    return this.fetchClient.fetch<R>(requestConfig);
+    return this.fetchClient.doRequest<R>(requestConfig);
   }
 }
 

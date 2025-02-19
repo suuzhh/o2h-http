@@ -6,7 +6,7 @@ export interface INTERNAL_RequestConfig {
   url: URL;
   method: "GET" | "POST";
   headers: Headers;
-  body?: Body["body"];
+  body?: Body["body"] | FormData | string;
 }
 
 export class HttpRequest extends Request {
@@ -36,9 +36,7 @@ export class HttpRequest extends Request {
       url: new URL(this.url),
       method: this.method as INTERNAL_RequestConfig["method"],
       headers: this.headers,
-      body: this.body
+      body: this.body,
     });
   }
-
-
 }
