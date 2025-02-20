@@ -68,6 +68,12 @@ describe("HttpRequest 构造函数", () => {
     expect(new HttpRequest(withBody).body).toBeInstanceOf(ReadableStream);
     expect(new HttpRequest(withoutBody).body).toBeNull();
   });
+
+  test("_originalConfig 正确读取构造函数配置", () => {
+    const cfg = createTestConfig();
+    const original = new HttpRequest(cfg);
+    expect(original._originalConfig).toEqual(cfg);
+  });
 });
 
 describe("clone 方法", () => {

@@ -61,7 +61,6 @@ export class HttpResponse extends Response {
   }
 
   async text(): Promise<string> {
-    console.log(this._parsedBody);
     // 调用父类的同名方法 并缓存结果
     if (this._parsedBody) return this._parsedBody;
 

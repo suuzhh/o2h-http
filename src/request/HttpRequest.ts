@@ -10,6 +10,9 @@ export interface INTERNAL_RequestConfig {
 }
 
 export class HttpRequest extends Request {
+  // 原始配置 用于测试
+  readonly _originalConfig: INTERNAL_RequestConfig;
+
   constructor(config: INTERNAL_RequestConfig) {
     // 如果设置了body，且method是GET，body将被忽略
     const hasBody = !(config.body && config.method === "GET");
@@ -19,16 +22,13 @@ export class HttpRequest extends Request {
       // https://github.com/nodejs/node/issues/46221
       // https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
       (config as { duplex?: "half" }).duplex = "half";
+    } else {
+      config.body = undefined;
     }
-    super(
-      config.url,
-      hasBody
-        ? config
-        : {
-            ...config,
-            body: undefined,
-          }
-    );
+
+    super(config.url, config);
+
+    this._originalConfig = { ...config };
   }
 
   clone(): HttpRequest {
