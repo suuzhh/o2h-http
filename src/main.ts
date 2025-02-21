@@ -1,14 +1,14 @@
 import { HttpClient } from "./Http";
+import { FetchHttpClient, type HttpClientConfig } from "./Http2";
 import { BlobParser } from "./parser";
 import { buildFailResult, buildSuccessResult } from "./utils";
 
 // export custom parsers
 export { BlobParser };
 
-
 /**
  * 即将重构，欢迎使用createFetchHttpClient体验新版客户端
- * @returns 
+ * @returns
  */
 export function createHttpClient() {
   return new HttpClient();
@@ -48,7 +48,6 @@ export function createDownloader() {
 }
 
 // 0.2.0重构
-
-export function createFetchHttpClient() {
-  
+export function createFetchHttpClient(config: HttpClientConfig = {}) {
+  return new FetchHttpClient(config);
 }

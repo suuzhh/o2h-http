@@ -121,7 +121,9 @@ export interface IHTTPRequestConfig
   headers: Headers;
 }
 
-/** user request config */
+/** user request config
+ * @deprecated
+ */
 export type RequestConfig = Partial<IHttpClientRequestOptions & IOhterOptions>;
 
 function getDefultOtherOptions(): IOhterOptions {

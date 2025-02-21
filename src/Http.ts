@@ -8,6 +8,9 @@ import { LifecycleCaller } from "./lifecycle";
 import type { IResult } from "./utils";
 import { IHttpClientAdaptor } from "./client-adaptor/base";
 
+/**
+ * @deprecated
+ */
 export interface IHttpClient {
   post<R = unknown, P = unknown>(
     url: string,

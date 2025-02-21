@@ -89,10 +89,10 @@ interface IHttpClientRequestOptions {
 }
 interface IOhterOptions {
     /**
-   * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
-   * @param status HTTP status code
-   * @returns
-   */
+     * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+     * @param status HTTP status code
+     * @returns
+     */
     validateStatus: (status: number) => boolean;
     /**
      * 请求超时时间
@@ -101,13 +101,18 @@ interface IOhterOptions {
      */
     timeout: number;
 }
-/** 适配器 请求对象 */
+/** 适配器 请求对象
+ *
+ * @TODO 实现HttpRequest对象
+ */
 interface IHTTPRequestConfig extends IHttpClientRequestOptions, IOhterOptions {
     /** headers字段在内部最终统一转为Headers对象 */
     headers: Headers;
 }
-/** user request config */
-type RequestConfig = Partial<IHttpClientRequestOptions & IOhterOptions>;
+/** user request config
+ * @deprecated
+ */
+type RequestConfig$1 = Partial<IHttpClientRequestOptions & IOhterOptions>;
 
 type SuccessResult<T> = {
     /** 解析是否成功 */
@@ -141,14 +146,32 @@ declare class BlobParser implements IResponseParser {
     parse<T = Blob>(response: globalThis.Response): Promise<ParseResult<T>>;
 }
 
+declare class JSONParser implements IResponseParser {
+    /**
+     * 解析 JSON 数据
+     * @param data JSON 字符串
+     * @returns 一个 ParseResult 对象，result 是解析后的数据，error 是解析时的错误
+     */
+    parse<T>(response: globalThis.Response): Promise<ParseResult<T>>;
+}
+
 interface Lifecycle {
     beforeRequest: (req: IHTTPRequestConfig) => Promise<IHTTPRequestConfig> | IHTTPRequestConfig | undefined;
     /**
+     *
+     * @deprecated - use `onResponseError` callback instead
      * 在响应状态未通过校验时触发
      *
      * 可通过 validateStatus 来自定义校验规则
      */
     onResponseStatusError: (req: IHTTPRequestConfig, res: globalThis.Response) => Promise<Error> | Error | undefined | void;
+    /**
+     * 请求未响应（非abort和timeout）和 response状态码未通过 `validateStatus` 校验时触发
+     * @param req
+     * @param {Response | undefined} res - 响应对象，在cors和断网情况下可能为空
+     * @returns
+     */
+    onResponseError: (req: IHTTPRequestConfig, res?: globalThis.Response) => Promise<void> | void;
 }
 interface LifecycleResult<T> {
     result?: T;
@@ -156,15 +179,22 @@ interface LifecycleResult<T> {
 }
 /**
  * implements all Http Lifecycle
+ *
+ * 声明周期应该只做事件回调的分发，不修改配置
+ * 如果需要在请求中修改配置，请使用 `pipeline`(规划中)
  */
 declare class LifecycleCaller {
     /**
      * lifecycle method only defined singlely
      */
     private __lifecycle__;
+    private __eventTarget__;
     call<T extends keyof Lifecycle>(name: T, ...args: Parameters<Lifecycle[T]>): Promise<LifecycleResult<Awaited<ReturnType<Lifecycle[T]>>>>;
     beforeRequest: (fn: Lifecycle["beforeRequest"]) => () => void;
     onResponseStatusError: (fn: Lifecycle["onResponseStatusError"]) => () => void;
+    emit<NAME extends keyof Lifecycle>(name: NAME, ...args: Parameters<Lifecycle[NAME]>): void;
+    onResponseError: (fn: Lifecycle["onResponseError"]) => () => void;
+    addEventListener: <NAME extends keyof Lifecycle>(name: NAME, fn: Lifecycle[NAME]) => () => void;
 }
 
 /** Promise结果包装类 */
@@ -177,27 +207,182 @@ type IResult<T = object, E = Error> = {
 };
 
 interface IHttpClientAdaptor {
-    fetch: <R>(request: IHTTPRequestConfig, responseParser: IResponseParser, lifecycle: LifecycleCaller) => Promise<IResult<R>>;
+    doRequest: <R>(request: IHTTPRequestConfig) => Promise<IResult<R>>;
 }
 
+/**
+ * @deprecated
+ */
 interface IHttpClient {
+    post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig$1): Promise<IResult<R>>;
+    get<P = Record<string, string | number>, R = unknown>(url: string, options?: Omit<RequestConfig$1, "url" | "method" | "body"> & {
+        query?: P;
+    }): Promise<IResult<R>>;
+}
+declare class HttpClient$1 implements IHttpClient {
+    readonly lifecycle: LifecycleCaller;
+    readonly fetchClient: IHttpClientAdaptor;
+    constructor(responseParser?: IResponseParser);
+    post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig$1): Promise<IResult<R>>;
+    get<R = Record<string, string>, P = Record<string, string | number> | string>(url: string, options?: Omit<RequestConfig$1, "url" | "method" | "body"> & {
+        query?: P;
+    }): Promise<IResult<R>>;
+}
+
+/**
+ * 内部使用的请求配置
+ * 用到哪些再实现，不要一次性扩展太多
+ * */
+interface INTERNAL_RequestConfig {
+    url: URL;
+    method: "GET" | "POST";
+    headers: Headers;
+    body?: Body["body"] | FormData | string;
+}
+declare class HttpRequest extends Request {
+    readonly _originalConfig: INTERNAL_RequestConfig;
+    constructor(config: INTERNAL_RequestConfig);
+    clone(): HttpRequest;
+}
+
+declare class HttpResponse extends Response {
+    private _parsedBody?;
+    private _headers;
+    private _status;
+    constructor(body?: BodyInit | null, init?: ResponseInit);
+    get headers(): Headers;
+    get status(): number;
+    set status(code: number);
+    parse<T = any>(parser?: (response: Response) => Promise<T>): Promise<T>;
+    private getDefaultParser;
+    json<T = any>(): Promise<T>;
+    text(): Promise<string>;
+    arrayBuffer(): Promise<ArrayBuffer>;
+    blob(): Promise<Blob>;
+    formData(): Promise<FormData>;
+    clone(): HttpResponse;
+    static createFromResponse(response: Response): HttpResponse;
+}
+
+declare class ResultError extends Error {
+    readonly type: Readonly<ResultErrorType>;
+    /** 响应对象 */
+    constructor(type: Readonly<ResultErrorType>, message?: string);
+}
+declare enum ResultErrorType {
+    NetworkError = "NetworkError",
+    TimeoutError = "TimeoutError",
+    AbortError = "AbortError",
+    /** 状态码验证错误 */
+    StatusValidateError = "StatusValidateError"
+}
+
+interface IHttpBackend {
+    doRequest: (request: HttpRequest, 
+    /** 用户可配置的配置项 */
+    config: Readonly<CommonConfig>) => Promise<HttpResult>;
+}
+/** 用户可配置的配置项 */
+interface CommonConfig {
+    /** 超时时间 单位：秒 */
+    timeout: number;
+    /** 校验响应状态 */
+    validateStatus: (status: number) => boolean;
+}
+interface HttpResult {
+    /** 响应对象 */
+    response: HttpResponse | null;
+    /** 错误对象 */
+    error: ResultError | null;
+}
+
+type HttpHandlerFn = (
+/** 请求配置， 由于配置对象可被修改， 可能存在配置被误删除的情况，需要使用对象现在配置的修改   */
+req: HttpRequest) => Promise<HttpResult>;
+/**
+ * 请求拦截器类型
+ * @public
+ */
+type HttpInterceptorFn = (req: HttpRequest, next: HttpHandlerFn) => Promise<HttpResult>;
+interface HttpInterceptorConfig {
+    request?: HttpInterceptorFn[];
+    response?: HttpInterceptorFn[];
+}
+declare class HttpInterceptorHandler {
+    private interceptors;
+    private backend;
+    private static config;
+    constructor(interceptors: HttpInterceptorFn[], backend: IHttpBackend);
+    static configure(callback: (config: HttpInterceptorConfig) => void): typeof HttpInterceptorHandler;
+    handle(initReq: HttpRequest, commonConfig: CommonConfig): Promise<HttpResult>;
+}
+
+/** 替换掉RequestConfig */
+interface CompleteHttpClientConfig {
+    /** 请求拦截器函数 */
+    interceptors: HttpInterceptorFn[];
+}
+type HttpClientConfig = Partial<CompleteHttpClientConfig>;
+interface CompleteRequestConfig {
+    /**
+     * a function that takes a numeric status code and returns a boolean indicating whether the status is valid. If the status is not valid, the result will be failed. then call `onResponseStatusError` lifecycle method
+     * @param status HTTP status code
+     * @returns
+     */
+    validateStatus: (status: number) => boolean;
+    /**
+     * 请求超时时间
+     *
+     * 0 表示不限制 使用系统默认超时时间
+     */
+    timeout: number;
+    /**
+     * support safari 13+
+     * @docs https://developer.mozilla.org/zh-CN/docs/Web/API/Request/signal
+     */
+    signal: globalThis.RequestInit["signal"] | null;
+    url: string;
+    headers: Record<string, string> | Headers;
+    /**
+     *  传递给请求体的数据（目前只支持FormData 和 string 和 js对象）
+      Only applicable for request methods 'PUT', 'POST', 'DELETE , and 'PATCH'
+      When no `transformRequest` is set, must be of one of the following types:
+      - string, plain object, ArrayBuffer, ArrayBufferView, URLSearchParams
+      - Browser only: FormData, File, Blob
+      - Node only: Stream, Buffer, FormData (form-data package)
+     */
+    body?: FormData | string | Record<string | number, any>;
+}
+type RequestConfig = Partial<CompleteRequestConfig>;
+interface IHttpMethods {
+    request<R = unknown>(config: RequestConfig): Promise<IResult<R>>;
     post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig): Promise<IResult<R>>;
     get<P = Record<string, string | number>, R = unknown>(url: string, options?: Omit<RequestConfig, "url" | "method" | "body"> & {
         query?: P;
     }): Promise<IResult<R>>;
 }
-declare class HttpClient implements IHttpClient {
-    private responseParser;
-    readonly lifecycle: LifecycleCaller;
-    readonly fetchClient: IHttpClientAdaptor;
-    constructor(responseParser?: IResponseParser);
+declare abstract class HttpClient {
+    protected httpBackend: IHttpBackend;
+    protected interceptorHandler: HttpInterceptorHandler;
+    constructor({ interceptors }: CompleteHttpClientConfig, httpBackend: IHttpBackend);
+}
+declare class FetchHttpClient extends HttpClient implements IHttpMethods {
+    readonly responseParser: JSONParser;
+    constructor({ interceptors }?: HttpClientConfig);
+    request<R = unknown>(config: RequestConfig & {
+        method?: string;
+    }): Promise<IResult<R>>;
     post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig): Promise<IResult<R>>;
-    get<R = Record<string, string>, P = Record<string, string | number> | string>(url: string, options?: Omit<RequestConfig, "url" | "method" | "body"> & {
+    get<R = unknown, P = Record<string, string | number>>(url: string, options?: Omit<RequestConfig, "url" | "body"> & {
         query?: P;
     }): Promise<IResult<R>>;
 }
 
-declare function createHttpClient(): HttpClient;
+/**
+ * 即将重构，欢迎使用createFetchHttpClient体验新版客户端
+ * @returns
+ */
+declare function createHttpClient(): HttpClient$1;
 declare function createDownloader(): {
     /**
      * 下载文件
@@ -216,5 +401,6 @@ declare function createDownloader(): {
         error?: undefined;
     }>;
 };
+declare function createFetchHttpClient(config?: HttpClientConfig): FetchHttpClient;
 
-export { BlobParser, createDownloader, createHttpClient };
+export { BlobParser, createDownloader, createFetchHttpClient, createHttpClient };
