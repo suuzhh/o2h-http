@@ -1,6 +1,9 @@
 export class ResultError extends Error {
   /** 响应对象 */
-  constructor(private type: Readonly<ResultErrorType>, message?: string) {
+  constructor(
+    public readonly type: Readonly<ResultErrorType>,
+    message?: string
+  ) {
     super(message);
   }
 }

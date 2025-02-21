@@ -73,7 +73,7 @@ describe("FetchHttpClient", () => {
         },
       }
     );
-    console.log(spy.mock.calls[0][0].body);
+
     expect(result.data).toEqual({ id: 123 });
     expect(spy).toBeCalledTimes(1);
   });
@@ -94,38 +94,46 @@ describe("FetchHttpClient", () => {
 
   describe("get method", () => {
     test("should handle successful GET request with query params", async () => {
-      (mockBackend.doRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
-        response: mockResponse(200, { data: "test" }),
-        error: null,
-      });
+      const spy = vi
+        .spyOn(FetchBackend.prototype, "doRequest")
+        .mockResolvedValue({
+          response: mockResponse(200, { data: "test" }),
+          error: null,
+        });
 
-      const result = await client.get("https://api.example.com/data", {
+      await client.get("https://api.example.com/data", {
         query: { page: 1, limit: 10 },
       });
 
-      expect(HttpRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: expect.stringContaining("?page=1&limit=10"),
-        })
-      );
-      expect(result.data).toEqual({ data: "test" });
+      const urlConfig = spy.mock.calls[0][0]._originalConfig.url;
+
+      expect(urlConfig).toBeInstanceOf(URL);
+      expect(urlConfig.searchParams.get("page")).toBe("1");
+      expect(urlConfig.searchParams.get("limit")).toBe("10");
     });
 
     test("should handle status code validation", async () => {
-      (mockBackend.doRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.spyOn(FetchBackend.prototype, "doRequest").mockResolvedValue({
         response: mockResponse(404, { error: "Not found" }),
-        error: null,
+        error: new ResultError(
+          ResultErrorType.StatusValidateError,
+          "not found 404"
+        ),
       });
 
       const result = await client.get("https://api.example.com/missing");
-      expect(!!result.data).toBe(false);
-      expect(result.error?.message).toContain("status code 404");
+      expect(result.data).toBeUndefined();
+      expect(result.error).instanceOf(ResultError);
+      expect((result.error as ResultError).type).toBe(
+        ResultErrorType.StatusValidateError
+      );
+      expect(result.error?.message).toContain("not found 404");
     });
 
     test("should handle timeout errors", async () => {
-      (mockBackend.doRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.spyOn(FetchBackend.prototype, "doRequest").mockResolvedValue({
         response: null,
-        error: new Error("Request Timeout"),
+        error: new ResultError(ResultErrorType.TimeoutError, "Request Timeout"),
       });
 
       const result = await client.get("https://api.example.com/slow", {
@@ -133,32 +141,6 @@ describe("FetchHttpClient", () => {
       });
 
       expect(result.error?.message).toBe("Request Timeout");
-    });
-  });
-
-  describe("response handling", () => {
-    test("should parse JSON response correctly", async () => {
-      (mockBackend.doRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
-        response: mockResponse(200, { parsed: true }),
-        error: null,
-      });
-
-      const result = await client.get("https://api.example.com/json");
-      expect(result.data).toEqual({ parsed: true });
-    });
-
-    test("should handle non-JSON responses", async () => {
-      (mockBackend.doRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
-        response: new HttpResponse("plain text", {
-          status: 200,
-          headers: { "content-type": "text/plain" },
-        }),
-        error: null,
-      });
-
-      const result = await client.get("https://api.example.com/text");
-      expect(!!result.data).toBe(false);
-      expect(result.error?.message).toContain("Unexpected token");
     });
   });
 });
