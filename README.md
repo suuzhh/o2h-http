@@ -21,13 +21,6 @@
 - JSONParser - JSON 数据解析
 - BlobParser - Blob 数据解析
 
-### Lifecycle
-
-- onBeforeRequest - 发送请求前
-- onAfterRequest - 发送请求后
-- onResponseStatusError - 响应状态错误,默认为状态码大于等于 400 时抛出错误，可通过`validateStatus`配置自定义错误的逻辑
-- onResultError - 结果错误，所有请求失败的情况都会触发该回调，包括但不限于`onResponseStatusError`(待实现)
-
 ### HttpClient
 
 HttpClient 是一个 HTTP 客户端包装类，提供具体的请求方法供用户调用。
@@ -35,7 +28,6 @@ HttpClient 是一个 HTTP 客户端包装类，提供具体的请求方法供用
 
 - Interceptor
 - Backend
-- Lifecycle (待实装)
 - Parser (待实装)
 
 目前支持实例配置和触发配置

@@ -14,4 +14,6 @@ export enum ResultErrorType {
   AbortError = "AbortError",
   /** 状态码验证错误 */
   StatusValidateError = "StatusValidateError",
+  /** 拦截器执行错误 */
+  InterceptorError = "InterceptorError"
 }

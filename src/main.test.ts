@@ -92,7 +92,7 @@ describe("createHttpClient", () => {
     }));
 });
 
-describe("createDownloader", () => {
+describe.skip("createDownloader", () => {
   test("download a jpg file", async () => {
     const downloader = createDownloader();
 

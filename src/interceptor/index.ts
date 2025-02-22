@@ -1,6 +1,7 @@
 // 实现angular的请求拦截器和响应拦截器
 
 import type { CommonConfig, HttpResult, IHttpBackend } from "@/backend/base";
+import { ResultError, ResultErrorType } from "@/backend/internal-error";
 import { HttpRequest } from "@/request/HttpRequest";
 
 export type HttpHandlerFn = (
@@ -16,52 +17,53 @@ export type HttpInterceptorFn = (
   next: HttpHandlerFn
 ) => Promise<HttpResult>;
 
-export interface HttpInterceptorConfig {
-  request?: HttpInterceptorFn[];
-  response?: HttpInterceptorFn[];
-}
-
 export class HttpInterceptorHandler {
-  private static config: HttpInterceptorConfig = {
-    request: [],
-    response: [],
-  };
-
   constructor(
     private interceptors: HttpInterceptorFn[],
     private backend: IHttpBackend
   ) {}
 
-  static configure(callback: (config: HttpInterceptorConfig) => void) {
-    callback(this.config);
-    return this;
-  }
-
-  handle(
+  async handle(
     initReq: HttpRequest,
     commonConfig: CommonConfig
   ): Promise<HttpResult> {
-    // 合并全局配置的拦截器和实例拦截器
-    const allInterceptors = [
-      ...(HttpInterceptorHandler.config.request || []),
-      ...this.interceptors,
-      ...(HttpInterceptorHandler.config.response || []).reverse(),
-    ];
+    try {
+      // 创建基础处理器
+      const baseHandler: HttpHandlerFn = (req) =>
+        this.backend.doRequest(req, commonConfig);
 
-    const endFn = (
-      initialRequest: HttpRequest,
-      finalHandlerFn: HttpHandlerFn
-    ) => finalHandlerFn(initialRequest);
+      // 构建拦截器链
+      const chain = this.interceptors.reduceRight<HttpHandlerFn>(
+        (next, interceptor) => {
+          return async (req) => {
+            try {
+              return await interceptor(req, next);
+            } catch (error) {
+              // 拦截器错误处理
+              return {
+                response: null,
+                error: new ResultError(
+                  ResultErrorType.InterceptorError,
+                  error instanceof Error ? error.message : "Interceptor error"
+                ),
+              };
+            }
+          };
+        },
+        baseHandler
+      );
 
-    const chain = allInterceptors.reduceRight((next, interceptorFn) => {
-      return (req: HttpRequest, lastNext: HttpHandlerFn) => {
-        return interceptorFn(req, (modifiedReq) => next(modifiedReq, lastNext));
+      // 执行拦截器链
+      return await chain(initReq);
+    } catch (error) {
+      // 全局错误处理, 是否需要处理这个情况？
+      return {
+        response: null,
+        error: new ResultError(
+          ResultErrorType.InterceptorError,
+          error instanceof Error ? error.message : "Request failed"
+        ),
       };
-    }, endFn);
-
-    return chain(initReq, (lastReq: HttpRequest) => {
-      // 执行最后一个操作
-      return this.backend.doRequest(lastReq, commonConfig);
-    });
+    }
   }
 }
