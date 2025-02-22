@@ -35,16 +35,82 @@ describe("HttpResponse", () => {
       await expect(response.json()).resolves.toEqual(mockData);
     });
 
-    test("应缓存解析结果", async () => {
+    test("应缓存JSON解析结果", async () => {
+      const mockData = { id: 1 };
       const response = HttpResponse.createFromResponse(
-        mockResponse("test", {
+        mockResponse(JSON.stringify(mockData), {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+
+      const firstCall = await response.json();
+      const secondCall = await response.json();
+      expect(firstCall).toEqual({ id: 1 });
+      expect(secondCall).toBe(firstCall); // 验证缓存
+    });
+
+    test("应缓存text解析结果", async () => {
+      const response = HttpResponse.createFromResponse(
+        mockResponse("test text", {
           headers: { "Content-Type": "text/plain" },
         })
       );
 
       const firstCall = await response.text();
-      const secondCall = await response.parse();
-      expect(firstCall).toBe(secondCall);
+      const secondCall = await response.text();
+      expect(firstCall).toBe("test text");
+      expect(secondCall).toBe(firstCall);
+    });
+
+    test("应缓存arrayBuffer解析结果", async () => {
+      const buffer = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+      const response = HttpResponse.createFromResponse(
+        mockResponse(buffer, {
+          headers: { "Content-Type": "application/octet-stream" },
+        })
+      );
+
+      const firstCall = await response.arrayBuffer();
+      const secondCall = await response.arrayBuffer();
+      expect(firstCall).toBeInstanceOf(ArrayBuffer);
+      expect(secondCall).toBe(firstCall);
+    });
+
+    test("应缓存blob解析结果", async () => {
+      const blob = new Blob(["test"]);
+      const response = HttpResponse.createFromResponse(
+        mockResponse(blob)
+      );
+
+      const firstCall = await response.blob();
+      const secondCall = await response.blob();
+      expect(firstCall).toBeInstanceOf(Blob);
+      expect(secondCall).toBe(firstCall);
+    });
+
+    test("应缓存formData解析结果", async () => {
+      const formData = new FormData();
+      formData.append("key", "value");
+      const response = HttpResponse.createFromResponse(
+        mockResponse(formData)
+      );
+
+      const firstCall = await response.formData();
+      const secondCall = await response.formData();
+      expect(firstCall.get("key")).toBe("value");
+      expect(secondCall.get("key")).toBe("value");
+    });
+
+    test("不同解析方法之间不应互相干扰", async () => {
+      const response = HttpResponse.createFromResponse(
+        mockResponse(JSON.stringify({ key: "value" }), {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+
+      const jsonResult = await response.json();
+      await expect(response.text()).resolves.not.toBe(jsonResult);
+      await expect(response.arrayBuffer()).resolves.not.toBe(jsonResult);
     });
   });
 

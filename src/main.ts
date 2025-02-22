@@ -51,3 +51,7 @@ export function createDownloader() {
 export function createFetchHttpClient(config: HttpClientConfig = {}) {
   return new FetchHttpClient(config);
 }
+
+export type { HttpInterceptorFn } from "./interceptor";
+export type { HttpRequest } from "./request/HttpRequest";
+export { ResultErrorType } from "./backend/internal-error";

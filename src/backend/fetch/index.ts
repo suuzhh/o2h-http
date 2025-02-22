@@ -53,12 +53,18 @@ export class FetchBackend implements IHttpBackend {
           error: new ResultError(ResultErrorType.TimeoutError, err.message),
         };
       }
+
+      // 处理各种类型的请求错误
+      let errorMessage = "Request Error";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      }
+
       return {
         response: null,
-        error: new ResultError(
-          ResultErrorType.NetworkError,
-          (err as any)?.message || "Network Error"
-        ),
+        error: new ResultError(ResultErrorType.RequestError, errorMessage),
       };
     }
 

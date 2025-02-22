@@ -7,8 +7,12 @@ export interface INTERNAL_RequestConfig {
   method: "GET" | "POST";
   headers: Headers;
   body?: Body["body"] | FormData | string;
+  signal: AbortSignal | null;
 }
 
+/**
+ * @public
+ */
 export class HttpRequest extends Request {
   // 原始配置 用于测试
   readonly _originalConfig: INTERNAL_RequestConfig;
@@ -37,6 +41,7 @@ export class HttpRequest extends Request {
       method: this.method as INTERNAL_RequestConfig["method"],
       headers: this.headers,
       body: this.body,
+      sinal: this.signal,
     });
   }
 }

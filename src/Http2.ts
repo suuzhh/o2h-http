@@ -122,6 +122,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       method: "POST",
       headers: headers,
       body: <FormData | string>body,
+      signal: config?.signal ?? null,
     });
 
     const conf = {
@@ -165,6 +166,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       url: new URL(url),
       method: "GET",
       headers,
+      signal: options?.signal ?? null,
     });
 
     const config: CommonConfig = {

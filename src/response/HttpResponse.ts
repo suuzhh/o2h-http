@@ -1,6 +1,10 @@
 // 基于MDN Response规范扩展的通用响应对象
 export class HttpResponse extends Response {
-  private _parsedBody?: any;
+  private _jsonBody?: any;
+  private _textBody?: string;
+  private _arrayBufferBody?: ArrayBuffer;
+  private _blobBody?: Blob;
+  private _formDataBody?: FormData;
   private _headers: Headers;
   private _status: number;
 
@@ -27,13 +31,9 @@ export class HttpResponse extends Response {
   async parse<T = any>(
     parser?: (response: Response) => Promise<T>
   ): Promise<T> {
-    if (this._parsedBody) return this._parsedBody;
-
     const contentType = this.headers.get("content-type") || "";
     const parserToUse = parser || this.getDefaultParser(contentType);
-
-    this._parsedBody = await parserToUse(this);
-    return this._parsedBody;
+    return await parserToUse(this);
   }
 
   private getDefaultParser(
@@ -53,38 +53,58 @@ export class HttpResponse extends Response {
 
   // 添加便捷方法
   async json<T = any>(): Promise<T> {
-    if (this._parsedBody) return this._parsedBody;
-
-    // 调用父类的同名方法
-    this._parsedBody = await super.json();
-    return this._parsedBody;
+    if (this._jsonBody) return this._jsonBody;
+    if (this._textBody) {
+      this._jsonBody = JSON.parse(this._textBody);
+      return this._jsonBody;
+    }
+    this._textBody = await super.text();
+    this._jsonBody = JSON.parse(this._textBody);
+    return this._jsonBody;
   }
 
   async text(): Promise<string> {
-    // 调用父类的同名方法 并缓存结果
-    if (this._parsedBody) return this._parsedBody;
-
-    this._parsedBody = await super.text();
-    return this._parsedBody;
+    if (this._textBody) return this._textBody;
+    this._textBody = await super.text();
+    return this._textBody;
   }
 
   async arrayBuffer(): Promise<ArrayBuffer> {
-    if (this._parsedBody) return this._parsedBody;
-
-    this._parsedBody = await super.arrayBuffer();
-    return this._parsedBody;
+    if (this._arrayBufferBody) return this._arrayBufferBody;
+    if (this._textBody) {
+      const encoder = new TextEncoder();
+      this._arrayBufferBody = encoder.encode(this._textBody).buffer;
+      return this._arrayBufferBody;
+    }
+    this._arrayBufferBody = await super.arrayBuffer();
+    return this._arrayBufferBody;
   }
 
   async blob(): Promise<Blob> {
-    if (this._parsedBody) return this._parsedBody;
-    this._parsedBody = await super.blob();
-    return this._parsedBody;
+    if (this._blobBody) return this._blobBody;
+    if (this._textBody) {
+      this._blobBody = new Blob([this._textBody]);
+      return this._blobBody;
+    }
+    if (this._arrayBufferBody) {
+      this._blobBody = new Blob([this._arrayBufferBody]);
+      return this._blobBody;
+    }
+    this._blobBody = await super.blob();
+    return this._blobBody;
   }
 
   async formData(): Promise<FormData> {
-    if (this._parsedBody) return this._parsedBody;
-    this._parsedBody = await super.formData();
-    return this._parsedBody;
+    if (this._formDataBody) return this._formDataBody;
+    if (this._textBody) {
+      const formData = new FormData();
+      const params = new URLSearchParams(this._textBody);
+      params.forEach((value, key) => formData.append(key, value));
+      this._formDataBody = formData;
+      return this._formDataBody;
+    }
+    this._formDataBody = await super.formData();
+    return this._formDataBody;
   }
 
   clone(): HttpResponse {

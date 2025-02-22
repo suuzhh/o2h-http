@@ -83,7 +83,7 @@ describe("FetchHttpClient", () => {
       .spyOn(FetchBackend.prototype, "doRequest")
       .mockResolvedValue({
         response: null,
-        error: new ResultError(ResultErrorType.NetworkError, "Network error"),
+        error: new ResultError(ResultErrorType.RequestError, "Network error"),
       });
 
     const result = await client.post("https://api.example.com/error");
