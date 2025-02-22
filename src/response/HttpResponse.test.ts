@@ -49,6 +49,33 @@ describe("HttpResponse", () => {
       expect(secondCall).toBe(firstCall); // 验证缓存
     });
 
+    test("先使用text解析再使用json解析，应缓存JSON解析结果", async () => {
+      const mockData = { id: 1 };
+      const response = HttpResponse.createFromResponse(
+        mockResponse(JSON.stringify(mockData), {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+
+      const firstCallText = await response.text();
+      const secondCall = await response.json();
+      expect(firstCallText).toBe(JSON.stringify(mockData));
+      expect(secondCall).toEqual(mockData);
+    });
+    test("先使用text解析再使用json解析，解析失败应抛出错误", async () => {
+      const mockData = "{";
+      const response = HttpResponse.createFromResponse(
+        mockResponse(mockData, {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+
+      const firstCallText = await response.text();
+      expect(firstCallText).toBe(mockData);
+
+      expect(response.json()).rejects.toThrow();
+    });
+
     test("应缓存text解析结果", async () => {
       const response = HttpResponse.createFromResponse(
         mockResponse("test text", {
@@ -78,9 +105,7 @@ describe("HttpResponse", () => {
 
     test("应缓存blob解析结果", async () => {
       const blob = new Blob(["test"]);
-      const response = HttpResponse.createFromResponse(
-        mockResponse(blob)
-      );
+      const response = HttpResponse.createFromResponse(mockResponse(blob));
 
       const firstCall = await response.blob();
       const secondCall = await response.blob();
@@ -88,17 +113,103 @@ describe("HttpResponse", () => {
       expect(secondCall).toBe(firstCall);
     });
 
-    test("应缓存formData解析结果", async () => {
-      const formData = new FormData();
-      formData.append("key", "value");
-      const response = HttpResponse.createFromResponse(
-        mockResponse(formData)
-      );
+    test("先使用arrayBuffer解析后再使用blob解析,应缓存blob解析结果", async () => {
+      const text = "test";
+      const response = HttpResponse.createFromResponse(mockResponse(text));
 
-      const firstCall = await response.formData();
-      const secondCall = await response.formData();
-      expect(firstCall.get("key")).toBe("value");
-      expect(secondCall.get("key")).toBe("value");
+      const firstCall = await response.arrayBuffer();
+      const secondCall = await response.blob();
+      expect(firstCall).toBeInstanceOf(ArrayBuffer);
+      expect(secondCall).toBeInstanceOf(Blob);
+      // 比对两次结果的解析，是否一致
+      const secondCallBuffer = await secondCall.arrayBuffer();
+      expect(firstCall.byteLength).toBe(secondCallBuffer.byteLength);
+      // 将firstCall 转为字符 再比对
+      const firstCallText = new TextDecoder().decode(firstCall);
+      expect(firstCallText).toBe(text);
+      const secondCallText = new TextDecoder().decode(secondCallBuffer);
+      expect(secondCallText).toBe(text);
+      expect(firstCallText).toBe(secondCallText);
+    });
+
+    test("先使用text解析后再使用blob解析,应缓存blob解析结果", async () => {
+      const text = "test";
+      const response = HttpResponse.createFromResponse(mockResponse(text));
+
+      const firstCallText = await response.text();
+      const secondCallBlob = await response.blob();
+      expect(firstCallText).toBe(text);
+      expect(secondCallBlob).toBeInstanceOf(Blob);
+      // blob转text
+      const secondCallText = await response.text();
+      expect(firstCallText).toBe(secondCallText);
+    });
+
+    describe("formData解析", () => {
+      test("应正确解析formData", async () => {
+        const formData = new FormData();
+        formData.append("username", "testuser");
+        formData.append("password", "testpass");
+        const response = HttpResponse.createFromResponse(
+          mockResponse(formData)
+        );
+
+        const result = await response.formData();
+        expect(result.get("username")).toBe("testuser");
+        expect(result.get("password")).toBe("testpass");
+      });
+
+      test("应缓存formData解析结果", async () => {
+        const formData = new FormData();
+        formData.append("key", "value");
+        const response = HttpResponse.createFromResponse(
+          mockResponse(formData)
+        );
+
+        const firstCall = await response.formData();
+        const secondCall = await response.formData();
+        expect(firstCall.get("key")).toBe("value");
+        expect(secondCall).toBe(firstCall); // 验证缓存
+      });
+
+      test("应从text缓存转换formData", async () => {
+        const textBody = "username=testuser&password=testpass";
+        const response = HttpResponse.createFromResponse(
+          mockResponse(textBody, {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          })
+        );
+
+        // 先使用text()解析，触发缓存
+        const textResult = await response.text();
+
+        expect(textResult).toBe(textBody);
+
+        const result = await response.formData();
+        expect(result.get("username")).toBe("testuser");
+        expect(result.get("password")).toBe("testpass");
+      });
+
+      test("应处理无效的formData格式", async () => {
+        const response = HttpResponse.createFromResponse(
+          mockResponse("invalid form data", {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          })
+        );
+        const result = await response.formData();
+        expect(result.get("invalid form data")).toBe("");
+      });
+
+      test("应正确处理空formData", async () => {
+        const response = HttpResponse.createFromResponse(
+          mockResponse("", {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          })
+        );
+
+        const result = await response.formData();
+        expect(result.entries().next().done).toBe(true);
+      });
     });
 
     test("不同解析方法之间不应互相干扰", async () => {
@@ -122,6 +233,38 @@ describe("HttpResponse", () => {
     expect(customParser).toBeCalledWith(response);
   });
 
+  test("应正确处理application/json类型", async () => {
+    const response = HttpResponse.createFromResponse(
+      mockResponse(JSON.stringify({ key: "value" }), {
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    await expect(response.parse()).resolves.toEqual({ key: "value" });
+  });
+
+  test("应正确处理text/plain类型", async () => {
+    const response = HttpResponse.createFromResponse(
+      mockResponse("Hello, world!", {
+        headers: { "Content-Type": "text/plain" },
+      })
+    );
+
+    await expect(response.parse()).resolves.toBe("Hello, world!");
+  });
+
+  test("应正确处理text/html类型", async () => {
+    const response = HttpResponse.createFromResponse(
+      mockResponse("<html><body>Hello, world!</body></html>", {
+        headers: { "Content-Type": "text/html" },
+      })
+    );
+
+    await expect(response.parse()).resolves.toBe(
+      "<html><body>Hello, world!</body></html>"
+    );
+  });
+
   test("应正确处理octet-stream类型", async () => {
     const buffer = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
     const response = HttpResponse.createFromResponse(
@@ -130,7 +273,19 @@ describe("HttpResponse", () => {
       })
     );
 
-    await expect(response.arrayBuffer()).resolves.toEqual(buffer.buffer);
+    await expect(response.parse()).resolves.toEqual(buffer.buffer);
+  });
+
+  test("应正确处理unknown类型", async () => {
+    const response = HttpResponse.createFromResponse(
+      mockResponse("Hello, world!", {
+        headers: { "Content-Type": "unknown" },
+      })
+    );
+    const blob = await response.parse();
+    expect(blob).toBeInstanceOf(Blob);
+    // blob transform to text
+    expect(await response.text()).toBe("Hello, world!");
   });
 
   test("应正确继承Response属性", () => {

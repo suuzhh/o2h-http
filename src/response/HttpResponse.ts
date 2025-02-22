@@ -31,7 +31,8 @@ export class HttpResponse extends Response {
   async parse<T = any>(
     parser?: (response: Response) => Promise<T>
   ): Promise<T> {
-    const contentType = this.headers.get("content-type") || "";
+    const contentType = this.headers.get("content-type") || "text/plain";
+    // 如果没有设置context-type, 默认会被设置为text/plain
     const parserToUse = parser || this.getDefaultParser(contentType);
     return await parserToUse(this);
   }
@@ -64,6 +65,10 @@ export class HttpResponse extends Response {
   }
 
   async text(): Promise<string> {
+    if (this._blobBody) {
+      this._textBody = await this._blobBody.text();
+      return this._textBody;
+    }
     if (this._textBody) return this._textBody;
     this._textBody = await super.text();
     return this._textBody;

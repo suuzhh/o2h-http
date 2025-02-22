@@ -46,7 +46,7 @@ async function testAbort() {
     console.error(result.error);
   }
 
-  console.log("call", result);
+  console.log("call", result.data);
 }
 
 testAbort();
