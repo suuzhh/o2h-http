@@ -1,6 +1,6 @@
 import { HttpRequest } from "@/request/HttpRequest";
 import { HttpResponse } from "@/response/HttpResponse";
-import { timeout as timeoutWrapper } from "../../client-adaptor/fetch/timeout";
+import { timeout as timeoutWrapper } from "./timeout";
 import type { CommonConfig, HttpResult, IHttpBackend } from "../base";
 import { ResultError, ResultErrorType } from "../internal-error";
 

@@ -1,4 +1,4 @@
-import { FetchHttpClient } from "./Http2";
+import { FetchHttpClient } from "./Http";
 import { FetchBackend } from "./backend/fetch";
 import { ResultError, ResultErrorType } from "./backend/internal-error";
 import { HttpRequest } from "./request/HttpRequest";
