@@ -7,7 +7,7 @@ export interface INTERNAL_RequestConfig {
   method: "GET" | "POST";
   headers: Headers;
   body?: Body["body"] | FormData | string;
-  signal: AbortSignal | null;
+  signal?: AbortSignal | null;
 }
 
 /**
@@ -41,7 +41,7 @@ export class HttpRequest extends Request {
       method: this.method as INTERNAL_RequestConfig["method"],
       headers: this.headers,
       body: this.body,
-      sinal: this.signal,
+      signal: this.signal,
     });
   }
 }
