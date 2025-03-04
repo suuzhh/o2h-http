@@ -67,6 +67,9 @@ const httpClient = createFetchHttpClient({
   interceptors: [handleError],
 });
 
+// 动态添加拦截器
+httpClient.useInterceptor(handleError);
+
 // 发送请求
 const res = await httpClient.get("https://www.baidu.com");
 

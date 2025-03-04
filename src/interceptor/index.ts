@@ -66,4 +66,14 @@ export class HttpInterceptorHandler {
       };
     }
   }
+
+  /**
+   * 动态添加拦截器的方法
+   * 根据加入的先后顺序，执行拦截器
+   * request before: 先进先出
+   * response after: 后进先出
+   *  */
+  addInterceptor(interceptor: HttpInterceptorFn): void {
+    this.interceptors.push(interceptor);
+  }
 }

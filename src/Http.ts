@@ -78,6 +78,11 @@ abstract class HttpClient {
       this.httpBackend
     );
   }
+
+  /** 添加http拦截器 */
+  useInterceptor(interceptor: HttpInterceptorFn): void {
+    this.interceptorHandler.addInterceptor(interceptor);
+  }
 }
 
 export class FetchHttpClient extends HttpClient implements IHttpMethods {

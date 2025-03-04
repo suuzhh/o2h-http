@@ -2,6 +2,7 @@ import { HttpInterceptorHandler } from "./index";
 import { HttpRequest } from "@/request/HttpRequest";
 import { ResultError, ResultErrorType } from "@/backend/internal-error";
 import { describe, it, expect, vi } from "vitest";
+import { C } from "vitest/dist/chunks/reporters.6vxQttCV.js";
 
 describe("HttpInterceptorHandler", () => {
   const mockReq = new HttpRequest({
@@ -92,5 +93,39 @@ describe("HttpInterceptorHandler", () => {
     await handler.handle(mockReq, commonConfig);
 
     expect(calls).toEqual(["interceptor1", "interceptor2"]);
+  });
+
+  it("dynamic add interceptor, should execute interceptors in correct order", async () => {
+    const calls: string[] = [];
+
+    const interceptor1 = vi.fn().mockImplementation(async (req, next) => {
+      calls.push("interceptor1_before");
+      const res = await next(req);
+      calls.push("interceptor1_after");
+      return res;
+    });
+    const interceptor2 = vi.fn().mockImplementation(async (req, next) => {
+      calls.push("interceptor2_before");
+      const res = await next(req);
+      calls.push("interceptor2_after");
+      return res;
+    });
+
+    const handler = new HttpInterceptorHandler([], mockBackend);
+
+    handler.addInterceptor(interceptor1);
+    handler.addInterceptor(interceptor2);
+
+    const result = await handler.handle(mockReq, commonConfig);
+
+    expect(interceptor1).toBeCalled();
+    expect(interceptor2).toBeCalled();
+    expect(result).toEqual({ response: "ok", error: null });
+    expect(calls).toEqual([
+      "interceptor1_before",
+      "interceptor2_before",
+      "interceptor2_after",
+      "interceptor1_after",
+    ]);
   });
 });
