@@ -51,20 +51,30 @@ yarn add @o2h/http
 ### 基本使用
 
 ```js
-import { createHttpClient } from "@o2h/http";
+import { createFetchHttpClient } from "@o2h/http";
 
-// 创建实例
-const httpClient = createHttpClient()；
+// 创建拦截器函数
+const handleError: HttpInterceptorFn = async (request, next) => {
+  // before request send
+  const res = await next(request);
+  // after request send
+  return res;
+};
+
+// 创建基于fetch的http实例
+const httpClient = createFetchHttpClient({
+  // 添加拦截器
+  interceptors: [handleError],
+});
 
 // 发送请求
-const res = await httpClient.get("https://www.baidu.com")
+const res = await httpClient.get("https://www.baidu.com");
 
 // 获取响应数据
 const data = res.data;
 
 // 获取错误信息
 const error = res.error;
-
 ```
 
 ## How to test
