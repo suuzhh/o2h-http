@@ -10,7 +10,8 @@
     "lint": "oxlint src --fix --fix-suggestions && eslint",
     "test:unit": "vitest",
     "test:coverage": "vitest run --coverage",
-    "clear:types-temp": "rd /s /q types\\src"
+    "clear:types-temp": "rd /s /q types\\src",
+    "release": "bumpp && npm publish"
   },
   "exports": {
     ".": {
@@ -36,6 +37,7 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
     "@vitest/coverage-v8": "3.0.6",
+    "bumpp": "^10.0.3",
     "eslint": "^9.21.0",
     "eslint-plugin-oxlint": "0.15.11",
     "oxlint": "0.15.11",
