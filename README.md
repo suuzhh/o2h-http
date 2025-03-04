@@ -14,6 +14,12 @@
 
 拦截器是一种设计模式，用于在请求和响应的生命周期中插入自定义逻辑，从而实现对请求和响应的拦截和处理。
 
+#### 关于拦截器中抛出的异常
+具体代码在h2o-http\src\interceptor\index.ts L46-L57
+拦截器执行过程中抛出的异常会被捕获并统一处理为HttpResult类型返回给下一个interceptor处理。
+注意此时HttpResult的error属性将被设置为InterceptorError，且response属性将被置空。
+拦截器抛出的异常会被捕获并统一处理为HttpResult类型返回。
+
 ### Parser
 
 处理请求和响应的数据解析（调研是否需要拆分为 requestParser 和 responseParser）
@@ -35,8 +41,6 @@ HttpClient 是一个 HTTP 客户端包装类，提供具体的请求方法供用
 
 - 触发配置
 - 实例配置
-
-### 插件系统(待定)
 
 ## 使用方法
 

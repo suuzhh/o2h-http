@@ -4,19 +4,42 @@ import { timeout as timeoutWrapper } from "./timeout";
 import type { CommonConfig, HttpResult, IHttpBackend } from "../base";
 import { ResultError, ResultErrorType } from "../internal-error";
 
+/**
+ * 默认头覆盖机制
+ *  当创建 new Request() 时，如果显式设置 headers 参数：
+ * new Request(url, { headers: new Headers() })
+ * 这会清除浏览器自动添加的默认头，包括：
+  * - Accept 
+  * - Accept-Language
+  * - User-Agent
+  * - Content-Type (当有请求体时)
+**/
+
 function createRequestInit(request: HttpRequest) {
-  const headers = new Headers(request.headers);
+  // 先创建默认Request实例
+  const defaultRequest = new Request(request.url);
+  const headers = new Headers(defaultRequest.headers);
+
+  // 合并用户自定义头（保留用户设置优先级）
+  const userHeaders = request.headers;
+  userHeaders.forEach((value, name) => {
+    headers.set(name, value);
+  });
 
   if (request.body instanceof FormData) {
     headers.delete("Content-Type");
   }
 
+  const body = request.readBodyAsString();
+
   return new Request(request.url, {
     method: request.method,
-    headers,
-    body: request.body,
+    headers: request.headers,
+    // 如果body类型为ReadableStream，则默认的headers将被消失
+    // 如果需要浏览器自动带上特定的header, 不要将body设置为此类型
+    body: body,
     // @ts-ignore - Temporary ignore for duplex type
-    duplex: request.body instanceof ReadableStream ? "half" : undefined,
+    duplex: body instanceof ReadableStream ? "half" : undefined,
     credentials: request.credentials,
     mode: request.mode,
     cache: request.cache,

@@ -45,7 +45,6 @@ describe("createHttpClient", () => {
           const endTime = performance.now() - startTime;
 
           const error = res.error;
-          console.log(error);
           // 测试是否包含中断错误
           expect((error as ResultError).type).toBe("AbortError");
           expect(endTime <= 4500).toBeTruthy();

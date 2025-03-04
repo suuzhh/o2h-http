@@ -118,7 +118,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       body = data;
     } else {
       // 这里有可能解析异常
-      body = JSON.stringify(data) as string;
+      body = data ? JSON.stringify(data) as string : undefined;
     }
 
     const req = new HttpRequest({

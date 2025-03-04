@@ -13,7 +13,7 @@ const handleError: HttpInterceptorFn = async (req, next) => {
 
 // const downloader = createDownloader();
 const httpClient = createFetchHttpClient({
-  interceptors: [handleError],
+  interceptors: [],
 });
 
 // downloader
@@ -31,8 +31,9 @@ window.addEventListener("unhandledrejection", (event) => {
 
 async function testAbort() {
   const controller = new AbortController();
-  const result = await httpClient.get(
-    "https://61e80b15e32cd90017acbfb7.mockapi.io/enterprise/news",
+  const result = await httpClient.post(
+    "https://dev.hp-api.cn/api/manager/order/list",
+    '123',
     {
       signal: controller.signal,
     }
@@ -49,4 +50,22 @@ async function testAbort() {
   console.log("call", result.data);
 }
 
-testAbort();
+async function testResponseInterceptor() {
+  httpClient.useInterceptor(async (req, next) => {
+    console.log("interceptor", req);
+    const res = await next(req);
+    if (res.response.status > 200) {
+      throw new Error("123 error");
+    }
+    return res;
+  });
+  const result = await httpClient.post(
+    "https://dev.hp-api.cn/api/manager/order/list",
+    '123',
+  );
+
+  console.log(result);
+}
+
+// testAbort();
+testResponseInterceptor();

@@ -23,6 +23,13 @@ export class HttpInterceptorHandler {
     private backend: IHttpBackend
   ) {}
 
+  /**
+   * 执行拦截器
+   * 
+   * @param initReq 
+   * @param commonConfig 
+   * @returns 
+   */
   async handle(
     initReq: HttpRequest,
     commonConfig: CommonConfig

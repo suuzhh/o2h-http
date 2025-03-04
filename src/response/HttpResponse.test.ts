@@ -73,7 +73,8 @@ describe("HttpResponse", () => {
       const firstCallText = await response.text();
       expect(firstCallText).toBe(mockData);
 
-      expect(response.json()).rejects.toThrow();
+      // 修复警告：添加await等待断言
+      await expect(response.json()).rejects.toThrow();
     });
 
     test("应缓存text解析结果", async () => {

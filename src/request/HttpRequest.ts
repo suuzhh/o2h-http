@@ -44,4 +44,20 @@ export class HttpRequest extends Request {
       signal: this.signal,
     });
   }
+
+  /**
+   * 读取request的请求体
+   * 注意：如果请求体是ReadableStream类型，该方法将返回undefined
+   * @returns 
+   */
+  readBodyAsString(): string | undefined {
+    if (this.method === "GET" || this.method === "HEAD") {
+      return undefined;
+    }
+    if (typeof this._originalConfig.body === "string") {
+      return this._originalConfig.body;
+    }
+
+    return undefined;
+  }
 }

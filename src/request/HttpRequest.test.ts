@@ -39,7 +39,6 @@ describe("HttpRequest 构造函数", () => {
     const methods = ["GET", "POST"] as const;
     methods.forEach((method) => {
       const config = createTestConfig(method);
-      console.log(config, method);
       const request = new HttpRequest(config);
       expect(request.method).toBe(method);
     });

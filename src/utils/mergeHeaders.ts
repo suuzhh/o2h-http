@@ -3,7 +3,8 @@ export function mergeHeaders(
   instanceHeaders?: Record<string, string> | Headers
 ): Headers {
   // 创建一个新的 Headers 对象
-  const mergedHeaders = new Headers();
+  // 默认设置content-type为application/json
+  const mergedHeaders = new Headers([]);
 
   // 如果存在 instanceHeaders，将其添加到 mergedHeaders
   if (instanceHeaders) {
