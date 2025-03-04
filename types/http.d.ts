@@ -16,6 +16,12 @@ declare class HttpRequest extends Request {
     readonly _originalConfig: INTERNAL_RequestConfig;
     constructor(config: INTERNAL_RequestConfig);
     clone(): HttpRequest;
+    /**
+     * 读取request的请求体
+     * 注意：如果请求体是ReadableStream类型，该方法将返回undefined
+     * @returns
+     */
+    readBodyAsString(): string | undefined;
 }
 
 declare class HttpResponse extends Response {
@@ -88,6 +94,13 @@ declare class HttpInterceptorHandler {
     private interceptors;
     private backend;
     constructor(interceptors: HttpInterceptorFn[], backend: IHttpBackend);
+    /**
+     * 执行拦截器
+     *
+     * @param initReq
+     * @param commonConfig
+     * @returns
+     */
     handle(initReq: HttpRequest, commonConfig: CommonConfig): Promise<HttpResult>;
     /**
      * 动态添加拦截器的方法

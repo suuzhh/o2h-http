@@ -2,7 +2,6 @@ import { HttpInterceptorHandler } from "./index";
 import { HttpRequest } from "@/request/HttpRequest";
 import { ResultError, ResultErrorType } from "@/backend/internal-error";
 import { describe, it, expect, vi } from "vitest";
-import { C } from "vitest/dist/chunks/reporters.6vxQttCV.js";
 
 describe("HttpInterceptorHandler", () => {
   const mockReq = new HttpRequest({
