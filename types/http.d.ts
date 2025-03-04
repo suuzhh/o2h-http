@@ -89,6 +89,13 @@ declare class HttpInterceptorHandler {
     private backend;
     constructor(interceptors: HttpInterceptorFn[], backend: IHttpBackend);
     handle(initReq: HttpRequest, commonConfig: CommonConfig): Promise<HttpResult>;
+    /**
+     * 动态添加拦截器的方法
+     * 根据加入的先后顺序，执行拦截器
+     * request before: 先进先出
+     * response after: 后进先出
+     *  */
+    addInterceptor(interceptor: HttpInterceptorFn): void;
 }
 
 type SuccessResult<T> = {
@@ -185,6 +192,8 @@ declare abstract class HttpClient {
     protected httpBackend: IHttpBackend;
     protected interceptorHandler: HttpInterceptorHandler;
     constructor({ interceptors }: CompleteHttpClientConfig, httpBackend: IHttpBackend);
+    /** 添加http拦截器 */
+    useInterceptor(interceptor: HttpInterceptorFn): void;
 }
 declare class FetchHttpClient extends HttpClient implements IHttpMethods {
     readonly responseParser: JSONParser;
