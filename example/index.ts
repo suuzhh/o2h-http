@@ -67,5 +67,18 @@ async function testResponseInterceptor() {
   console.log(result);
 }
 
+async function testFormData() {
+  const formData = new FormData();
+  formData.append("file", new Blob(["123"]), "123.jpg");
+  formData.append("oid", "123");
+  const result = await httpClient.post(
+    "https://dev.hp-api.cn/api/manager/order/upload",
+    formData,
+  );
+
+  console.log(result);
+}
+
 // testAbort();
-testResponseInterceptor();
+// testResponseInterceptor();
+testFormData();

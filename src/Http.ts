@@ -92,15 +92,15 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     super({ interceptors }, new FetchBackend());
   }
 
-  async request<R = unknown>(
-    config: RequestConfig & { method?: string }
+  async request<R = unknown, P = unknown>(
+    config: RequestConfig & { method?: string, data?: P }
   ): Promise<IResult<R>> {
     const method = config.method || "GET";
     const url = config.url || "";
     if (method === "GET") {
       return this.get<R>(url, config);
     } else if (method === "POST") {
-      return this.post<R>(url, config);
+      return this.post<R>(url, config?.data, config);
     } else {
       return buildFailResult(new Error("method not supported"));
     }
@@ -119,6 +119,11 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     } else {
       // 这里有可能解析异常
       body = data ? JSON.stringify(data) as string : undefined;
+      // 判断data类型是js对象，则设置请求头content-type为application/json
+      // 当数据是普通对象时自动设置Content-Type
+      if (data && typeof data === 'object' && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
     }
 
     const req = new HttpRequest({
@@ -165,6 +170,11 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     }
 
     const headers = mergeHeaders(options?.headers);
+
+    // 默认为get请求设置content-type为application/json
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
 
     const req = new HttpRequest({
       url: new URL(url),

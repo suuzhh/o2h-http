@@ -211,8 +211,9 @@ declare abstract class HttpClient {
 declare class FetchHttpClient extends HttpClient implements IHttpMethods {
     readonly responseParser: JSONParser;
     constructor({ interceptors }?: HttpClientConfig);
-    request<R = unknown>(config: RequestConfig & {
+    request<R = unknown, P = unknown>(config: RequestConfig & {
         method?: string;
+        data?: P;
     }): Promise<IResult<R>>;
     post<R = unknown, P = unknown>(url: string, data?: P, config?: RequestConfig): Promise<IResult<R>>;
     get<R = unknown, P = Record<string, string | number>>(url: string, options?: Omit<RequestConfig, "url" | "body"> & {

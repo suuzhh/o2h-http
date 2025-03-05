@@ -30,8 +30,16 @@ function createRequestInit(request: HttpRequest) {
     headers.delete("Content-Type");
   }
 
-  const body = request.readBodyAsString();
-
+  let body: BodyInit | undefined = undefined;
+  // 如果content-type为multipart/form-data，则将body转换为FormData
+  if (
+    request.headers.get("Content-Type")?.includes("multipart/form-data")
+  ) {
+    body = request._originalConfig.body as FormData;
+  } else {
+    // 其它类型暂时转为字符串
+    body = request.readBodyAsString();
+  }
   return new Request(request.url, {
     method: request.method,
     headers: request.headers,
