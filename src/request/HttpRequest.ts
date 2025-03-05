@@ -60,4 +60,7 @@ export class HttpRequest extends Request {
 
     return undefined;
   }
+
+  // TODO: 根据content-type读取request body
+
 }
