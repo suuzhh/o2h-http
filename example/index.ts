@@ -69,11 +69,16 @@ async function testResponseInterceptor() {
 
 async function testFormData() {
   const formData = new FormData();
-  formData.append("file", new Blob(["123"]), "123.jpg");
-  formData.append("oid", "123");
+  formData.append("file", new File(["123"], "润色.docx"));
+  formData.append("orderid", "2503045691183033");
   const result = await httpClient.post(
     "https://dev.hp-api.cn/api/manager/order/upload",
     formData,
+    {
+      headers: {
+        'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDExNDA3MjMsIm5iZiI6MTc0MTE0MDcyMywianRpIjoiMTFlOGQxNDAtNDM5OC00YWYzLWIyMjEtNjgyYjFiNjhkOGEzIiwiZXhwIjoxNzQxMTQ3OTIzLCJpZGVudGl0eSI6IjNkNDIyMzJlLTBlOWUtNGYxNS05ZTgyLWM2Y2U5ZDliNzEyYyIsImZyZXNoIjpmYWxzZSwidHlwZSI6ImFjY2VzcyJ9.TLsukX-6DQEMscoWHkFbOYySMUf68FFob41Bv6gj0Jg'
+      }
+    }
   );
 
   console.log(result);

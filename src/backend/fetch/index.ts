@@ -26,9 +26,7 @@ function createRequestInit(request: HttpRequest) {
     headers.set(name, value);
   });
 
-  if (request.body instanceof FormData) {
-    headers.delete("Content-Type");
-  }
+
 
   let body: BodyInit | undefined = undefined;
   // 如果content-type为multipart/form-data，则将body转换为FormData
@@ -40,9 +38,14 @@ function createRequestInit(request: HttpRequest) {
     // 其它类型暂时转为字符串
     body = request.readBodyAsString();
   }
+
+  if (body instanceof FormData) {
+    headers.delete("Content-Type");
+  }
+
   return new Request(request.url, {
     method: request.method,
-    headers: request.headers,
+    headers: headers,
     // 如果body类型为ReadableStream，则默认的headers将被消失
     // 如果需要浏览器自动带上特定的header, 不要将body设置为此类型
     body: body,
