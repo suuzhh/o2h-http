@@ -16,38 +16,26 @@ import { ResultError, ResultErrorType } from "../internal-error";
 **/
 
 function createRequestInit(request: HttpRequest) {
-  // 先创建默认Request实例
-  const defaultRequest = new Request(request.url);
-  const headers = new Headers(defaultRequest.headers);
+  const headers = request.headers;
 
-  // 合并用户自定义头（保留用户设置优先级）
-  const userHeaders = request.headers;
-  userHeaders.forEach((value, name) => {
-    headers.set(name, value);
-  });
-
-
-
-  let body: BodyInit | undefined = undefined;
-  // 如果content-type为multipart/form-data，则将body转换为FormData
-  if (
-    request.headers.get("Content-Type")?.includes("multipart/form-data")
-  ) {
-    body = request._originalConfig.body as FormData;
-  } else {
-    // 其它类型暂时转为字符串
-    body = request.readBodyAsString();
-  }
-
+  const body = request.readBodyByType();
+  // fetch请求中如果body为FormData类型,会自动生成对应的content-type
+  // https://flaviocopes.com/fix-formdata-multipart-fetch/
+  // https://philna.sh/blog/2025/01/14/troubles-with-multipart-form-data-fetch-node-js/
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type#content-type_in_multipart_forms
   if (body instanceof FormData) {
-    headers.delete("Content-Type");
+    if (headers.has("Content-Type")) {
+      // 如果body类型为ReadableStream，则默认的headers将被消失
+      console.warn(
+        "FetchBackend: Content-Type will be ignored when body is FormData"
+      );
+      headers.delete("Content-Type");
+    }
   }
 
   return new Request(request.url, {
     method: request.method,
     headers: headers,
-    // 如果body类型为ReadableStream，则默认的headers将被消失
-    // 如果需要浏览器自动带上特定的header, 不要将body设置为此类型
     body: body,
     // @ts-ignore - Temporary ignore for duplex type
     duplex: body instanceof ReadableStream ? "half" : undefined,

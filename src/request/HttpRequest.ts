@@ -50,7 +50,7 @@ export class HttpRequest extends Request {
    * 注意：如果请求体是ReadableStream类型，该方法将返回undefined
    * @returns 
    */
-  readBodyAsString(): string | undefined {
+  private _readBodyAsString(): string | undefined {
     if (this.method === "GET" || this.method === "HEAD") {
       return undefined;
     }
@@ -61,6 +61,20 @@ export class HttpRequest extends Request {
     return undefined;
   }
 
-  // TODO: 根据content-type读取request body
+  /**
+   * 根据content-type读取request body
+   * @returns {BodyInit | undefined}
+   */
+  readBodyByType(): BodyInit | undefined {
+    if (
+      this.headers.get("Content-Type")?.includes("multipart/form-data")
+    ) {
+      return this._originalConfig.body as FormData;
+    } else {
+      // TODO: ReadableStream 类型的请求体读取未实现
+      // 其它类型暂时转为字符串
+      return this._readBodyAsString();
+    }
+  }
 
 }

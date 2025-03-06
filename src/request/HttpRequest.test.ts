@@ -109,3 +109,59 @@ describe("clone 方法", () => {
     expect(cloned.headers.get("X-Original-Update")).toBeNull();
   });
 });
+
+describe('readBodyByType 方法', () => {
+  test('应正确解析multipart/form-data类型', () => {
+    const formData = new FormData();
+    formData.append('file', new Blob(['test']), 'test.txt');
+
+    const req = new HttpRequest({
+      url: new URL('http://example.com'),
+      method: 'POST',
+      headers: new Headers({ 'Content-Type': 'multipart/form-data; boundary=test' }),
+      body: formData,
+      signal: null
+    });
+
+    expect(req.readBodyByType()).toBeInstanceOf(FormData);
+  });
+
+  test('应正确解析JSON字符串', () => {
+    const req = new HttpRequest({
+      url: new URL('http://example.com'),
+      method: 'POST',
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ key: 'value' }),
+      signal: null
+    });
+
+    expect(req.readBodyByType()).toBe('{"key":"value"}');
+  });
+
+  test('无Content-Type时应返回字符串body', () => {
+    const req = new HttpRequest({
+      url: new URL('http://example.com'),
+      method: 'POST',
+      headers: new Headers(),
+      body: 'plain text',
+      signal: null
+    });
+
+    expect(req.readBodyByType()).toBe('plain text');
+  });
+
+  test('GET请求应始终返回undefined', () => {
+    const req = new HttpRequest({
+      url: new URL('http://example.com'),
+      method: 'GET',
+      headers: new Headers({ 'Content-Type': 'text/plain' }),
+      body: 'should be ignored',
+      signal: null
+    });
+
+    expect(req.readBodyByType()).toBeUndefined();
+  });
+
+  test.todo('应处理ReadableStream类型body');
+});
+
