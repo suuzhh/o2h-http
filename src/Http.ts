@@ -5,6 +5,7 @@ import { IResponseParser, JSONParser } from "./parser";
 import { HttpRequest } from "./request/HttpRequest";
 import { buildFailResult, buildSuccessResult, type IResult } from "./utils";
 import { mergeHeaders } from "./utils/mergeHeaders";
+import { parseURL } from "./utils/parseURL";
 
 /** 替换掉RequestConfig */
 export interface CompleteHttpClientConfig {
@@ -93,7 +94,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
   }
 
   async request<R = unknown, P = unknown>(
-    config: RequestConfig & { method?: string, data?: P }
+    config: RequestConfig & { method?: string; data?: P }
   ): Promise<IResult<R>> {
     const method = config.method || "GET";
     const url = config.url || "";
@@ -118,16 +119,16 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       body = data;
     } else {
       // 这里有可能解析异常
-      body = data ? JSON.stringify(data) as string : undefined;
+      body = data ? (JSON.stringify(data) as string) : undefined;
       // 判断data类型是js对象，则设置请求头content-type为application/json
       // 当数据是普通对象时自动设置Content-Type
-      if (data && typeof data === 'object' && !headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
+      if (data && typeof data === "object" && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
       }
     }
 
     const req = new HttpRequest({
-      url: new URL(url),
+      url: parseURL(url),
       method: "POST",
       headers: headers,
       body: <FormData | string>body,
@@ -172,12 +173,12 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     const headers = mergeHeaders(options?.headers);
 
     // 默认为get请求设置content-type为application/json
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
     }
 
     const req = new HttpRequest({
-      url: new URL(url),
+      url: parseURL(url),
       method: "GET",
       headers,
       signal: options?.signal ?? null,
