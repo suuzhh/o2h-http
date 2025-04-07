@@ -21,7 +21,12 @@ declare class HttpRequest extends Request {
      * 注意：如果请求体是ReadableStream类型，该方法将返回undefined
      * @returns
      */
-    readBodyAsString(): string | undefined;
+    private _readBodyAsString;
+    /**
+     * 根据content-type读取request body
+     * @returns {BodyInit | undefined}
+     */
+    readBodyByType(): BodyInit | undefined;
 }
 
 declare class HttpResponse extends Response {
