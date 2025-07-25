@@ -9,7 +9,8 @@
         "transform": "tsc-alias"
       }
     ],
-    "outDir": "types"
+    "outDir": "types",
+    "isolatedDeclarations": true,
   },
   "exclude": [
     "./src/**/*.test.ts"
