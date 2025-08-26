@@ -84,6 +84,13 @@ const data = res.data;
 const error = res.error;
 ```
 
+### 发起GET请求
+
+```js
+import { createFetchHttpClient } from "@o2h/http";
+const httpClient = createFetchHttpClient();
+const res = await httpClient.get("https://www.google.com");
+```
 ## How to test
 
 基于 vitest 实现基础单元测试

@@ -25,26 +25,59 @@ export class HttpInterceptorHandler {
 
   /**
    * 执行拦截器
-   * 
-   * @param initReq 
-   * @param commonConfig 
-   * @returns 
+   *
+   * @param initReq
+   * @param commonConfig
+   * @returns
    */
   async handle(
     initReq: HttpRequest,
     commonConfig: CommonConfig
   ): Promise<HttpResult> {
     try {
+      let baseHandlerHasBeenCalled = false;
+      let lastResult: HttpResult | undefined;
       // 创建基础处理器
-      const baseHandler: HttpHandlerFn = (req) =>
-        this.backend.doRequest(req, commonConfig);
+      const baseHandler: HttpHandlerFn = async (req) => {
+        const res = await this.backend.doRequest(req, commonConfig);
+        baseHandlerHasBeenCalled = true;
+        return res;
+      };
 
       // 构建拦截器链
       const chain = this.interceptors.reduceRight<HttpHandlerFn>(
         (next, interceptor) => {
           return async (req) => {
             try {
-              return await interceptor(req, next);
+              const result = await interceptor(req, next);
+              // 检查拦截器返回结果
+              // 如果用户配置的拦截器没有返回，则使用上一次的成功结果，最终回退到默认请求的结果
+              const isResultOk = checkInterceptorResult(result);
+
+              if (isResultOk) {
+                lastResult = result;
+                return result;
+              } else {
+                if (baseHandlerHasBeenCalled) {
+                  console.warn(
+                    "Can't receive interceptor result, fallback to previous result."
+                  );
+                } else {
+                  // 如果拦截器中未调用 next 方法
+                  console.warn("The second argument of interceptor function must be call.");
+                }
+
+                // fallback to previous result
+                return (
+                  lastResult ?? {
+                    response: null,
+                    error: new ResultError(
+                      ResultErrorType.InterceptorError,
+                      "Interceptor not have a valid result"
+                    ),
+                  }
+                );
+              }
             } catch (error) {
               // 拦截器错误处理
               return {
@@ -83,4 +116,19 @@ export class HttpInterceptorHandler {
   addInterceptor(interceptor: HttpInterceptorFn): void {
     this.interceptors.push(interceptor);
   }
+}
+
+/**
+ * 检查拦截器的返回结果是否符合预期
+ *
+ * 主要是判断用户有没有设置正确的拦截器返回值
+ * @param result
+ * @returns
+ */
+function checkInterceptorResult(result?: Readonly<HttpResult>): boolean {
+  if (!result) {
+    return false;
+  }
+
+  return true;
 }
