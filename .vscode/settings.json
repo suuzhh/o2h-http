@@ -1,0 +1,5 @@
+{
+  "oxc.lint.run": "onSave",
+  "oxc.enable": true,
+  "oxc.typeAware": true
+}

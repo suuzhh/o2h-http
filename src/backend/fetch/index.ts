@@ -9,11 +9,11 @@ import { ResultError, ResultErrorType } from "../internal-error";
  *  当创建 new Request() 时，如果显式设置 headers 参数：
  * new Request(url, { headers: new Headers() })
  * 这会清除浏览器自动添加的默认头，包括：
-  * - Accept 
-  * - Accept-Language
-  * - User-Agent
-  * - Content-Type (当有请求体时)
-**/
+ * - Accept
+ * - Accept-Language
+ * - User-Agent
+ * - Content-Type (当有请求体时)
+ **/
 
 function createRequestInit(request: HttpRequest) {
   const headers = request.headers;
