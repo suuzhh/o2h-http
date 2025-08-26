@@ -10,7 +10,7 @@
       }
     ],
     "outDir": "types",
-    "isolatedDeclarations": true,
+    // "isolatedDeclarations": true,
   },
   "exclude": [
     "./src/**/*.test.ts"

@@ -6,7 +6,7 @@ const handleError: HttpInterceptorFn = async (req, next) => {
     console.log(req, result);
   }
 
-  const parsedResult = await result.response.json();
+  const parsedResult = await result?.response?.json();
   console.log("success", parsedResult);
   return result;
 };
@@ -33,7 +33,7 @@ async function testAbort() {
   const controller = new AbortController();
   const result = await httpClient.post(
     "https://dev.hp-api.cn/api/manager/order/list",
-    '123',
+    "123",
     {
       signal: controller.signal,
     }
@@ -54,14 +54,14 @@ async function testResponseInterceptor() {
   httpClient.useInterceptor(async (req, next) => {
     console.log("interceptor", req);
     const res = await next(req);
-    if (res.response.status > 200) {
+    if (res?.response?.status ?? 0 > 200) {
       throw new Error("123 error");
     }
     return res;
   });
   const result = await httpClient.post(
     "https://dev.hp-api.cn/api/manager/order/list",
-    '123',
+    "123"
   );
 
   console.log(result);
@@ -76,8 +76,9 @@ async function testFormData() {
     formData,
     {
       headers: {
-        'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDExNDA3MjMsIm5iZiI6MTc0MTE0MDcyMywianRpIjoiMTFlOGQxNDAtNDM5OC00YWYzLWIyMjEtNjgyYjFiNjhkOGEzIiwiZXhwIjoxNzQxMTQ3OTIzLCJpZGVudGl0eSI6IjNkNDIyMzJlLTBlOWUtNGYxNS05ZTgyLWM2Y2U5ZDliNzEyYyIsImZyZXNoIjpmYWxzZSwidHlwZSI6ImFjY2VzcyJ9.TLsukX-6DQEMscoWHkFbOYySMUf68FFob41Bv6gj0Jg'
-      }
+        authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDExNDA3MjMsIm5iZiI6MTc0MTE0MDcyMywianRpIjoiMTFlOGQxNDAtNDM5OC00YWYzLWIyMjEtNjgyYjFiNjhkOGEzIiwiZXhwIjoxNzQxMTQ3OTIzLCJpZGVudGl0eSI6IjNkNDIyMzJlLTBlOWUtNGYxNS05ZTgyLWM2Y2U5ZDliNzEyYyIsImZyZXNoIjpmYWxzZSwidHlwZSI6ImFjY2VzcyJ9.TLsukX-6DQEMscoWHkFbOYySMUf68FFob41Bv6gj0Jg",
+      },
     }
   );
 
