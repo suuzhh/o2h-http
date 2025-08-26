@@ -1,5 +1,6 @@
 {
   "oxc.lint.run": "onSave",
   "oxc.enable": true,
-  "oxc.typeAware": true
+  "oxc.typeAware": true,
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }
