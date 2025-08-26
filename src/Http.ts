@@ -144,7 +144,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     const { response, error } = await this.interceptorHandler.handle(req, conf);
 
     if (error) {
-      return buildFailResult(error);
+      return buildFailResult(error, response?.clone());
     }
 
     // 有响应才算成功
@@ -196,7 +196,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     );
 
     if (error) {
-      return buildFailResult(error);
+      return buildFailResult(error, response?.clone());
     }
 
     // 有响应才算成功
@@ -214,17 +214,20 @@ async function parseResponse<R>(
   res: Response,
   responseParser: IResponseParser
 ) {
+  const nativeResponse = res.clone();
   try {
     const parseResult = await responseParser.parse<R>(res);
     if (parseResult.isSuccess) {
-      return buildSuccessResult(parseResult.result);
+      return buildSuccessResult(parseResult.result, nativeResponse);
     }
     return buildFailResult(
-      parseResult.error.cause ?? new Error("response parse error")
+      parseResult.error.cause ?? new Error("response parse error"),
+      nativeResponse
     );
   } catch (err) {
     return buildFailResult(
-      err instanceof Error ? err : new Error("response parse error")
+      err instanceof Error ? err : new Error("response parse error"),
+      nativeResponse
     );
   }
 }

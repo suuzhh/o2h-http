@@ -34,7 +34,11 @@ describe("FetchHttpClient", () => {
     const spy = vi
       .spyOn(FetchBackend.prototype, "doRequest")
       .mockResolvedValue({
-        response: mockResponse(200, { success: true }),
+        response: mockResponse(
+          200,
+          { success: true },
+          { "Content-Type": "application/json" }
+        ),
         error: null,
       });
 
@@ -50,6 +54,11 @@ describe("FetchHttpClient", () => {
     expect(result.data).not.toBeUndefined();
     expect(result.data?.success).toBe(true);
     expect(spy).toBeCalledTimes(1);
+    expect(result.response).toBeInstanceOf(Response);
+    expect(result.response?.status).toBe(200);
+    expect(result.response?.headers.get("Content-Type")).toBe(
+      "application/json"
+    );
   });
 
   test("should handle FormData POST request", async () => {
