@@ -1,6 +1,6 @@
 {
   "name": "@o2h/http",
-  "version": "0.2.6",
+  "version": "0.2.7-beta.1",
   "description": "web http client",
   "type": "module",
   "scripts": {
@@ -16,13 +16,12 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/http.esm.js",
-      "types": "./types/http.d.ts"
+      "import": "./dist/http.js",
+      "types": "./dist/http.d.ts"
     }
   },
   "files": [
     "dist",
-    "types",
     "README.md",
     "package.json"
   ],
