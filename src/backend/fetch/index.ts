@@ -27,7 +27,7 @@ function createRequestInit(request: HttpRequest) {
     if (headers.has("Content-Type")) {
       // 如果body类型为ReadableStream，则默认的headers将被消失
       console.warn(
-        "FetchBackend: Content-Type will be ignored when body is FormData"
+        "FetchBackend: Content-Type will be ignored when body is typeof FormData"
       );
       headers.delete("Content-Type");
     }
