@@ -6,7 +6,12 @@ import { HttpResponse } from "./response/HttpResponse";
 import { vi, describe, test, expect, beforeEach } from "vitest";
 
 // Mock dependencies
-vi.mock("./backend/fetch");
+
+vi.mock(import("./backend/fetch"), () => {
+  const FetchBackend = vi.fn();
+  FetchBackend.prototype.doRequest = vi.fn();
+  return { FetchBackend };
+});
 
 const mockResponse = (
   status: number,

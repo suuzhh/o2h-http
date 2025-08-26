@@ -1,5 +1,6 @@
 import oxlint from "eslint-plugin-oxlint";
+import { defineConfig } from "eslint/config";
 
-export default [
-  oxlint.configs["flat/recommended"], // oxlint should be the last one
-];
+export default defineConfig([
+  ...oxlint.configs["flat/typescript"], // oxlint should be the last one
+]);

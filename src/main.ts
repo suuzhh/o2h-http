@@ -1,7 +1,9 @@
 import { FetchHttpClient, type HttpClientConfig } from "./Http";
 
 // 0.2.0重构
-export function createFetchHttpClient(config: HttpClientConfig = {}) {
+export function createFetchHttpClient(
+  config: HttpClientConfig = {}
+): FetchHttpClient {
   return new FetchHttpClient(config);
 }
 

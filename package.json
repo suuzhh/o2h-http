@@ -1,27 +1,24 @@
 {
   "name": "@o2h/http",
-  "version": "0.2.6",
+  "version": "0.2.7-beta.1",
   "description": "web http client",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "rollup -c && pnpm build:types",
-    "build:types": "tsc -p tsconfig.dts.json && tsc-alias -p tsconfig.dts.json && rollup -c rollup.dts.config.js && pnpm clear:types-temp",
-    "lint": "oxlint src --fix --fix-suggestions && eslint",
+    "build:tsdown": "tsdown -c tsdown.config.ts",
+    "lint": "oxlint src --fix --fix-suggestions",
     "test:unit": "vitest",
     "test:coverage": "vitest run --coverage",
-    "clear:types-temp": "rd /s /q types\\src",
     "release": "bumpp && npm publish"
   },
   "exports": {
     ".": {
-      "import": "./dist/http.esm.js",
-      "types": "./types/http.d.ts"
+      "import": "./dist/http.js",
+      "types": "./dist/http.d.ts"
     }
   },
   "files": [
     "dist",
-    "types",
     "README.md",
     "package.json"
   ],
@@ -34,20 +31,14 @@
   "author": "szh362680581@gmail.com",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^16.0.0",
-    "@rollup/plugin-typescript": "^12.1.2",
-    "@vitest/coverage-v8": "3.0.6",
-    "bumpp": "^10.0.3",
-    "eslint": "^9.21.0",
-    "eslint-plugin-oxlint": "0.15.11",
-    "oxlint": "0.15.11",
-    "rollup": "^4.34.8",
-    "rollup-plugin-dts": "^6.1.1",
-    "tsc-alias": "^1.8.10",
+    "@vitest/coverage-v8": "3.2.4",
+    "bumpp": "^10.2.3",
+    "oxlint": "1.13.0",
+    "tsdown": "^0.14.2",
     "tslib": "^2.8.1",
-    "typescript": "^5.7.3",
-    "vite": "^6.1.1",
-    "vitest": "3.0.6"
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3",
+    "vitest": "3.2.4"
   },
   "packageManager": "pnpm@9.15.4"
 }
