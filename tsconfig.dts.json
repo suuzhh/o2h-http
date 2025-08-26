@@ -2,13 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "declarationDir": "./types",
-    "plugins": [
-      {
-        "transform": "tsc-alias"
-      }
-    ],
+    "declarationMap": false,
     "outDir": "types",
     // "isolatedDeclarations": true,
   },
