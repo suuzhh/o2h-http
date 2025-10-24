@@ -64,7 +64,7 @@ async function testResponseInterceptor() {
     "123"
   );
 
-  console.log(result);
+  console.log(result.response?.status);
 }
 
 async function testFormData() {
