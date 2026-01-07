@@ -14,7 +14,7 @@
   "exports": {
     ".": {
       "import": "./dist/http.js",
-      "types": "./dist/http.d.ts"
+      "types": "./dist/http.d.mts"
     }
   },
   "files": [
