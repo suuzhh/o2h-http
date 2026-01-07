@@ -13,7 +13,7 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/http.js",
+      "import": "./dist/http.mjs",
       "types": "./dist/http.d.mts"
     }
   },
