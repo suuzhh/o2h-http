@@ -50,6 +50,8 @@ export interface CompleteRequestConfig {
     - Node only: Stream, Buffer, FormData (form-data package)
    */
   body?: FormData | string | Record<string | number, any>;
+  /** 跨域请求时是否携带凭证 */
+  credentials: RequestCredentials;
 }
 
 export type RequestConfig = Partial<CompleteRequestConfig>;
@@ -133,6 +135,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       headers: headers,
       body: <FormData | string>body,
       signal: config?.signal ?? null,
+      credentials: config?.credentials || "omit",
     });
 
     const conf = {
@@ -182,6 +185,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       method: "GET",
       headers,
       signal: options?.signal ?? null,
+      credentials: options?.credentials || "omit",
     });
 
     const config: CommonConfig = {

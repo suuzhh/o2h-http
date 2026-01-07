@@ -85,6 +85,19 @@ async function testFormData() {
   console.log(result);
 }
 
+async function testValidateStatusError() {
+  const result = await httpClient.post(
+    "/test/status-error",
+    {
+      template: 'demo',
+      version: 'test'
+    }
+  );
+
+  // 通过response对象获取业务错误信息
+  console.log((await result.response?.json())?.message);
+}
+
 // testAbort();
-testResponseInterceptor();
+testValidateStatusError();
 // testFormData();
