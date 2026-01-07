@@ -21,7 +21,7 @@ export class HttpInterceptorHandler {
   constructor(
     private interceptors: HttpInterceptorFn[],
     private backend: IHttpBackend
-  ) {}
+  ) { }
 
   /**
    * 执行拦截器
@@ -41,6 +41,11 @@ export class HttpInterceptorHandler {
       const baseHandler: HttpHandlerFn = async (req) => {
         const res = await this.backend.doRequest(req, commonConfig);
         baseHandlerHasBeenCalled = true;
+
+        // 如果是第一个拦截器， 则将结果保存到lastResult中
+        if (!lastResult) {
+          lastResult = res;
+        }
         return res;
       };
 
@@ -49,6 +54,7 @@ export class HttpInterceptorHandler {
         (next, interceptor) => {
           return async (req) => {
             try {
+              // 如果第一个拦截器中在调用next方法后直接抛出异常，也无法获取到next方法的结果
               const result = await interceptor(req, next);
               // 检查拦截器返回结果
               // 如果用户配置的拦截器没有返回，则使用上一次的成功结果，最终回退到默认请求的结果
@@ -81,7 +87,7 @@ export class HttpInterceptorHandler {
             } catch (error) {
               // 拦截器错误处理
               return {
-                response: null,
+                response: lastResult?.response ?? null,
                 error: new ResultError(
                   ResultErrorType.InterceptorError,
                   error instanceof Error ? error.message : "Interceptor error"

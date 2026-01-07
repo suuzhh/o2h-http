@@ -50,6 +50,8 @@ export interface CompleteRequestConfig {
     - Node only: Stream, Buffer, FormData (form-data package)
    */
   body?: FormData | string | Record<string | number, any>;
+  /** 跨域请求时是否携带凭证 */
+  credentials: RequestCredentials;
 }
 
 export type RequestConfig = Partial<CompleteRequestConfig>;
@@ -133,6 +135,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       headers: headers,
       body: <FormData | string>body,
       signal: config?.signal ?? null,
+      credentials: config?.credentials || "omit",
     });
 
     const conf = {
@@ -144,7 +147,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     const { response, error } = await this.interceptorHandler.handle(req, conf);
 
     if (error) {
-      return buildFailResult(error);
+      return buildFailResult(error, response?.clone());
     }
 
     // 有响应才算成功
@@ -182,6 +185,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
       method: "GET",
       headers,
       signal: options?.signal ?? null,
+      credentials: options?.credentials || "omit",
     });
 
     const config: CommonConfig = {
@@ -196,7 +200,7 @@ export class FetchHttpClient extends HttpClient implements IHttpMethods {
     );
 
     if (error) {
-      return buildFailResult(error);
+      return buildFailResult(error, response?.clone());
     }
 
     // 有响应才算成功
@@ -214,17 +218,20 @@ async function parseResponse<R>(
   res: Response,
   responseParser: IResponseParser
 ) {
+  const nativeResponse = res.clone();
   try {
     const parseResult = await responseParser.parse<R>(res);
     if (parseResult.isSuccess) {
-      return buildSuccessResult(parseResult.result);
+      return buildSuccessResult(parseResult.result, nativeResponse);
     }
     return buildFailResult(
-      parseResult.error.cause ?? new Error("response parse error")
+      parseResult.error.cause ?? new Error("response parse error"),
+      nativeResponse
     );
   } catch (err) {
     return buildFailResult(
-      err instanceof Error ? err : new Error("response parse error")
+      err instanceof Error ? err : new Error("response parse error"),
+      nativeResponse
     );
   }
 }

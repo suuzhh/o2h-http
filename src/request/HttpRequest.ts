@@ -8,6 +8,8 @@ export interface INTERNAL_RequestConfig {
   headers: Headers;
   body?: Body["body"] | FormData | string;
   signal?: AbortSignal | null;
+  /** 跨域请求时是否携带凭证 */
+  credentials: RequestCredentials;
 }
 
 /**
@@ -20,6 +22,8 @@ export class HttpRequest extends Request {
   constructor(config: INTERNAL_RequestConfig) {
     // 如果设置了body，且method是GET，body将被忽略
     const hasBody = !(config.body && config.method === "GET");
+    // 跨域请求时是否携带凭证
+    config.credentials = config.credentials || "omit";
 
     if (hasBody) {
       // 为了兼容NODEJS ReadableStream
@@ -42,6 +46,7 @@ export class HttpRequest extends Request {
       headers: this.headers,
       body: this.body,
       signal: this.signal,
+      credentials: this.credentials,
     });
   }
 
